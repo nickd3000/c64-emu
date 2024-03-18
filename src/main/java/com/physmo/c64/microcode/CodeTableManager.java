@@ -11,7 +11,8 @@ public class CodeTableManager {
     }
 
     public void initCodeTableMain() {
-        codeTableMain.define(0x00, "NOP", MicroOp.NOP);
+        codeTableMain.define(0x00, "BRK", MicroOp.BRK);
+        codeTableMain.define(0xEA, "NOP", MicroOp.NOP);
 
         codeTableMain.define(0x29, "AND #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.AND);
         codeTableMain.define(0x2D, "AND $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.AND );
@@ -22,6 +23,202 @@ public class CodeTableManager {
         codeTableMain.define(0x21, "AND ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.AND);
         codeTableMain.define(0x31, "AND ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.AND);
 
+
+        codeTableMain.define(0x09, "ORA #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.ORA);
+        codeTableMain.define(0x0D, "ORA $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA );
+        codeTableMain.define(0x1D, "ORA $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+        codeTableMain.define(0x19, "ORA $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+        codeTableMain.define(0x05, "ORA $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+        codeTableMain.define(0x15, "ORA $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+        codeTableMain.define(0x01, "ORA ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+        codeTableMain.define(0x11, "ORA ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ORA);
+
+        codeTableMain.define(0x49, "EOR #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.EOR);
+        codeTableMain.define(0x4D, "EOR $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR );
+        codeTableMain.define(0x5D, "EOR $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+        codeTableMain.define(0x59, "EOR $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+        codeTableMain.define(0x45, "EOR $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+        codeTableMain.define(0x55, "EOR $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+        codeTableMain.define(0x41, "EOR ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+        codeTableMain.define(0x51, "EOR ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.EOR);
+
+
+
+        codeTableMain.define(0x8D, "STA $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.STA);
+        codeTableMain.define(0x9D, "STA $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.STA);
+        codeTableMain.define(0x99, "STA $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.STA);
+        codeTableMain.define(0x85, "STA $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.STA);
+        codeTableMain.define(0x95, "STA $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.STA);
+        codeTableMain.define(0x81, "STA ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.STA);
+        codeTableMain.define(0x91, "STA ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.STA);
+
+
+        codeTableMain.define(0x8E, "STX $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.STX);
+        codeTableMain.define(0x86, "STX $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.STX);
+        codeTableMain.define(0x96, "STX $nn,Y", MicroOp.SET_ADDRESS_ZERO_PAGE_Y, MicroOp.STX);
+
+        codeTableMain.define(0x8C, "STY $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.STY);
+        codeTableMain.define(0x84, "STY $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.STY);
+        codeTableMain.define(0x94, "STY $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.STY);
+
+
+        codeTableMain.define(0xA9, "LDA #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.LDA);
+        codeTableMain.define(0xAD, "LDA $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xBD, "LDA $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xB9, "LDA $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xA5, "LDA $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xB5, "LDA $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xA1, "LDA ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+        codeTableMain.define(0xB1, "LDA ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDA);
+
+
+        codeTableMain.define(0xA2, "LDX #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.LDX);
+        codeTableMain.define(0xAE, "LDX $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDX);
+        codeTableMain.define(0xBE, "LDX $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDX);
+        codeTableMain.define(0xA6, "LDX $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDX);
+        codeTableMain.define(0xB6, "LDX $nn,Y", MicroOp.SET_ADDRESS_ZERO_PAGE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDX);
+
+        codeTableMain.define(0xA0, "LDY #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.LDY);
+        codeTableMain.define(0xAC, "LDY $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDY);
+        codeTableMain.define(0xBC, "LDY $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDY);
+        codeTableMain.define(0xA4, "LDY $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDY);
+        codeTableMain.define(0xB4, "LDY $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LDY);
+
+
+
+        codeTableMain.define(0xEE, "INC $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.INC);
+        codeTableMain.define(0xFE, "INC $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.INC);
+        codeTableMain.define(0xE6, "INC $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.INC);
+        codeTableMain.define(0xF6, "INC $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.INC);
+
+        codeTableMain.define(0xCE, "DEC $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.DEC);
+        codeTableMain.define(0xDE, "DEC $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.DEC);
+        codeTableMain.define(0xC6, "DEC $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.DEC);
+        codeTableMain.define(0xD6, "DEC $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.DEC);
+
+
+
+        // TRANSFERS: TAX, TAY, TSX, TXA, TXS, TYA
+        codeTableMain.define(0xAA, "TAX", MicroOp.TAX);
+        codeTableMain.define(0xA8, "TAY", MicroOp.TAY);
+        codeTableMain.define(0xBA, "TSX", MicroOp.TSX);
+        codeTableMain.define(0x8A, "TXA", MicroOp.TXA);
+        codeTableMain.define(0x9A, "TXS", MicroOp.TXS);
+        codeTableMain.define(0x98, "TYA", MicroOp.TYA);
+
+        // FLAG OPERATIONS  CLC, CLD, CLI, CLV, SEC, SED, SEI,
+        codeTableMain.define(0x18, "CLC", MicroOp.CLC);
+        codeTableMain.define(0xD8, "CLD", MicroOp.CLD);
+        codeTableMain.define(0x58, "CLI", MicroOp.CLI);
+        codeTableMain.define(0xB8, "CLV", MicroOp.CLV);
+        codeTableMain.define(0x38, "SEC", MicroOp.SEC);
+        codeTableMain.define(0xF8, "SED", MicroOp.SED);
+        codeTableMain.define(0x78, "SEI", MicroOp.SEI);
+
+        // JUMP & CALL
+        codeTableMain.define(0x20, "JSR $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.JSR);
+        codeTableMain.define(0x60, "RTS", MicroOp.RTS);
+        codeTableMain.define(0x40, "RTI", MicroOp.RTI);
+
+
+        codeTableMain.define(0x4C, "JMP $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.JMP);
+        codeTableMain.define(0x6C, "JMP ($nnnn)", MicroOp.SET_ADDRESS_ABSOLUTE_INDIRECT, MicroOp.JMP);
+
+
+        // BRANCH - BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS
+        codeTableMain.define(0x90, "BCC $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BCC);
+        codeTableMain.define(0xB0, "BCS $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BCS);
+        codeTableMain.define(0xF0, "BEQ $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BEQ);
+        codeTableMain.define(0x30, "BMI $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BMI);
+        codeTableMain.define(0xD0, "BNE $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BNE);
+        codeTableMain.define(0x10, "BPL $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BPL);
+        codeTableMain.define(0x50, "BVC $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BVC);
+        codeTableMain.define(0x70, "BVS $nnnn", MicroOp.SET_ADDRESS_RELATIVE, MicroOp.BVS);
+
+
+        codeTableMain.define(0xC9, "CMP #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.CMP);
+        codeTableMain.define(0xCD, "CMP $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP );
+        codeTableMain.define(0xDD, "CMP $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+        codeTableMain.define(0xD9, "CMP $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+        codeTableMain.define(0xC5, "CMP $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+        codeTableMain.define(0xD5, "CMP $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+        codeTableMain.define(0xC1, "CMP ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+        codeTableMain.define(0xD1, "CMP ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CMP);
+
+
+        codeTableMain.define(0xE0, "CPX #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.CPX);
+        codeTableMain.define(0xEC, "CPX $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CPX );
+        codeTableMain.define(0xE4, "CPX $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CPX);
+
+        codeTableMain.define(0xC0, "CPY #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.CPY);
+        codeTableMain.define(0xCC, "CPY $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CPY );
+        codeTableMain.define(0xC4, "CPY $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.CPY);
+
+
+        codeTableMain.define(0x69, "ADC #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.ADC);
+        codeTableMain.define(0x6D, "ADC $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC );
+        codeTableMain.define(0x7D, "ADC $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+        codeTableMain.define(0x79, "ADC $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+        codeTableMain.define(0x65, "ADC $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+        codeTableMain.define(0x75, "ADC $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+        codeTableMain.define(0x61, "ADC ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+        codeTableMain.define(0x71, "ADC ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ADC);
+
+        codeTableMain.define(0xE9, "SBC #$nn", MicroOp.GET_NEXT_BYTE, MicroOp.SBC);
+        codeTableMain.define(0xED, "SBC $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC );
+        codeTableMain.define(0xFD, "SBC $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+        codeTableMain.define(0xF9, "SBC $nnnn,Y", MicroOp.SET_ADDRESS_ABSOLUTE_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+        codeTableMain.define(0xE5, "SBC $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+        codeTableMain.define(0xF5, "SBC $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+        codeTableMain.define(0xE1, "SBC ($nn,X)", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+        codeTableMain.define(0xF1, "SBC ($nn),Y", MicroOp.SET_ADDRESS_ZERO_PAGE_INDIRECT_Y, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.SBC);
+
+
+        // INC and DEC X and Y - DEX, DEY, INX, INY,
+        codeTableMain.define(0xCA, "DEX", MicroOp.DEX);
+        codeTableMain.define(0x88, "DEY", MicroOp.DEY);
+        codeTableMain.define(0xE8, "INX", MicroOp.INX);
+        codeTableMain.define(0xC8, "INY", MicroOp.INY);
+
+
+        // ROTATE and SHIFT
+        codeTableMain.define(0x2A, "ROL A", MicroOp.FETCH_A, MicroOp.ROL, MicroOp.STORE_A);
+        codeTableMain.define(0x2E, "ROL $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x3E, "ROL $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x26, "ROL $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x36, "ROL $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROL, MicroOp.STORE_BYTE_AT_ADDRESS);
+
+        codeTableMain.define(0x6A, "ROR A", MicroOp.FETCH_A, MicroOp.ROR, MicroOp.STORE_A);
+        codeTableMain.define(0x6E, "ROR $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x7E, "ROR $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x66, "ROR $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x76, "ROR $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ROR, MicroOp.STORE_BYTE_AT_ADDRESS);
+
+        codeTableMain.define(0x0A, "ASL A", MicroOp.FETCH_A, MicroOp.ASL, MicroOp.STORE_A);
+        codeTableMain.define(0x0E, "ASL $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ASL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x1E, "ASL $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ASL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x06, "ASL $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ASL, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x16, "ASL $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.ASL, MicroOp.STORE_BYTE_AT_ADDRESS);
+
+
+        codeTableMain.define(0x4A, "LSR A", MicroOp.FETCH_A, MicroOp.LSR, MicroOp.STORE_A);
+        codeTableMain.define(0x4E, "LSR $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LSR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x5E, "LSR $nnnn,X", MicroOp.SET_ADDRESS_ABSOLUTE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LSR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x46, "LSR $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LSR, MicroOp.STORE_BYTE_AT_ADDRESS);
+        codeTableMain.define(0x56, "LSR $nn,X", MicroOp.SET_ADDRESS_ZERO_PAGE_X, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.LSR, MicroOp.STORE_BYTE_AT_ADDRESS);
+
+
+        // BINARY
+        codeTableMain.define(0x2C, "BIT $nnnn", MicroOp.SET_ADDRESS_ABSOLUTE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.BIT);
+        codeTableMain.define(0x24, "BIT $nn", MicroOp.SET_ADDRESS_ZERO_PAGE, MicroOp.FETCH_BYTE_FROM_ADDRESS, MicroOp.BIT);
+
+
+
+        // STACK - PHA, PHP, PLA, PLP,
+        codeTableMain.define(0x48, "PHA", MicroOp.PHA);
+        codeTableMain.define(0x08, "PHP", MicroOp.PHP);
+        codeTableMain.define(0x68, "PLA", MicroOp.PLA);
+        codeTableMain.define(0x28, "PLP", MicroOp.PLP);
 
 
 //        codeTableMain.define(0x01, "LD BC,d16", MicroOp.FETCH_16, MicroOp.STORE_BC);

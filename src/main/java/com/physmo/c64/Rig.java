@@ -49,22 +49,16 @@ public class Rig {
 	}
 
 	public void runForCycles(int runFor) {
-		cpu.debugOutput = false;
+		cpu.debugOutput = true;
 		int displayLines = 500; //
 		int instructionsPerScanLine = 60;
 		int tickCount = 0;
 
-		for (int i = 0; i < runFor + displayLines; i++) {
-			if (i > runFor - displayLines)
-				cpu.debugOutput = true;
 
-			/*
-			 * if (basicDisplay.getKeyState()[65]>0) { //System.out.println("sim"); int
-			 * prgLoc=0; try { System.out.println("Attempting to load prg"); prgLoc =
-			 * Utils.ReadPrgFileBytesToMemoryLocation("src/huntersm.prg", cpu, 0xD000); }
-			 * catch (IOException e) { // TODO Auto-generated catch block
-			 * e.printStackTrace(); } // Character set cpu.PC=prgLoc; }
-			 */
+		for (int i = 0; i < runFor + displayLines; i++) {
+//			if (i > runFor - displayLines)
+//				cpu.debugOutput = true;
+
 
 			for (int ii = 0; ii < instructionsPerScanLine; ii++) {
 
@@ -72,19 +66,14 @@ public class Rig {
 					io.checkKeyboard(basicDisplay);
 				}
 
-				if (tickCount % 1000 == 0) {
-					// cpu.setInterrupt(); // test
-					// cpu.irq();
-				}
-
 				// Don't tick other components if unit test is active.
 				if (cpu.unitTest == false) {
 					cia1.tick();
 					cia2.tick();
-					cpu.tick(i);
+					cpu.tick2();
 					vic.tick();
 				} else {
-					cpu.tick(i);
+					cpu.tick2();
 				}
 
 				tickCount++;

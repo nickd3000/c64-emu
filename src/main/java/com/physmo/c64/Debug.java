@@ -21,9 +21,9 @@ public class Debug {
 		str += " SP:" + Utils.toHex2(cpu.SP);
 		//str += " PC:" + Utils.toHex4(cpu.PC);
 		//str += " FL:"+Utils.toHex2(cpu.FL);
-		str += " " + renderFlags(cpu.FL);
-		str += printStack(cpu);
-		str += "  "+(char)cpu.A+(char)cpu.X+(char)cpu.Y;
+		str += " " + renderFlags(cpu.FL) + "  ";
+		//str += printStack(cpu);
+		//str += "  "+(char)cpu.A+(char)cpu.X+(char)cpu.Y;
 		return str;
 	}
 

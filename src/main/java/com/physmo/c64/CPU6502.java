@@ -1,19 +1,20 @@
 package com.physmo.c64;
 
+import com.physmo.c64.microcode.CodeTableManager;
 import com.physmo.c64.microcode.MicroOp;
 
 import java.io.IOException;
 
 public class CPU6502 {
 
-    public static int FLAG_CARRY = 1;
-    public static int FLAG_ZERO = 1 << 1;
-    public static int FLAG_INTERRUPT_DISABLE = 1 << 2;
-    public static int FLAG_DECIMAL_MODE = 1 << 3;
-    public static int FLAG_BREAK = 1 << 4;
-    public static int FLAG_UNUSED = 1 << 5;
-    public static int FLAG_OVERFLOW = 1 << 6;
-    public static int FLAG_NEGATIVE = 1 << 7;
+    public static int FLAG_CARRY = 0b00000001;
+    public static int FLAG_ZERO = 0b00000010;
+    public static int FLAG_INTERRUPT_DISABLE = 0b00000100;
+    public static int FLAG_DECIMAL_MODE = 0b00001000;
+    public static int FLAG_BREAK = 0b00010000;
+    public static int FLAG_UNUSED = 0b00100000;
+    public static int FLAG_OVERFLOW = 0b01000000;
+    public static int FLAG_NEGATIVE = 0b10000000;
     private static String romPath = "/Users/nick/dev/emulatorsupportfiles/c64/rom/";
     public int firstUnimplimentedInstructionIndex = -1;
     public boolean lg = false;
@@ -23,6 +24,7 @@ public class CPU6502 {
     public String stateString = "";
     public boolean simulateKeypress = false;
     public boolean printInstructions = false;
+    CodeTableManager codeTableManager = new CodeTableManager();
     MEMC64 mem = null;
     int A; // Accumulator register
     int X; // X register
@@ -41,6 +43,9 @@ public class CPU6502 {
     int cycles = 0;
     int tickCount = 0;
     int previousPC = 0;
+    int addressBus = 0;
+    int dataBus = 0;
+    String addressString = "";
 
     public void attachHardware(MEMC64 mem) {
         this.mem = mem;
@@ -88,7 +93,7 @@ public class CPU6502 {
         // mem.RAM[1] = 0x37; // 07 set CPU control lines (for bank switching)
 
         mem.RAM[0xD018] = 16; // set screen text location???
-        mem.RAM[0x02A6] = 1; // PAL/NTSC Flag, O= NTSC, 1 = PAL
+        mem.RAM[0x02A6] = 0; // PAL/NTSC Flag, O= NTSC, 1 = PAL
         // mem.IO[0xD018] = 16; // set screen text location???
         // mem.IO[0x02A6] = 1; // PAL/NTSC Flag, O= NTSC, 1 = PAL
 
@@ -109,8 +114,10 @@ public class CPU6502 {
 
     }
 
-    int addressBus = 0;
-    int dataBus = 0;
+    private String buildDebugAddressString() {
+        return "&" + Utils.toHex4(addressBus) + ":0x" + Utils.toHex2(mem.peek(addressBus)) + "  PLA:" + Utils.toHex2(mem.RAM[1]);
+    }
+
 
     private void doMicroOp(MicroOp op) {
 
@@ -118,44 +125,366 @@ public class CPU6502 {
 
         switch (op) {
 
+            case BRK:
+                // NOTE: not sure if PC needs +1 here
+                //
+                pushWord(PC + 1); // PC+1
+                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);
+                PC = getWord(0xfffe);
+                setFlag(FLAG_INTERRUPT_DISABLE);
+                setFlag(FLAG_BREAK);
+                break;
+            case NOP:
+                break;
             /*
                 Addressing modes
             */
             case SET_ADDRESS_ABSOLUTE:
                 // $nnnn
                 addressBus = getNextWord();
+                addressString = buildDebugAddressString();
+                break;
+            case SET_ADDRESS_ABSOLUTE_INDIRECT:
+                wrk = getNextWord();
+                addressBus = mem.peekWord(wrk);
+                addressString = buildDebugAddressString();
                 break;
             case SET_ADDRESS_ABSOLUTE_X:
                 // $nnnn,X
-                addressBus = (getNextWord() + X)&0xFFFF;
+                addressBus = (getNextWord() + X) & 0xFFFF;
+                addressString = buildDebugAddressString();
                 break;
             case SET_ADDRESS_ABSOLUTE_Y:
                 // $nnnn,Y
-                addressBus = (getNextWord() + Y)&0xFFFF;
+                addressBus = (getNextWord() + Y) & 0xFFFF;
+                addressString = buildDebugAddressString();
                 break;
             case SET_ADDRESS_ZERO_PAGE:
                 // $nn
-                addressBus = getNextByte()&0xFF;
+                addressBus = getNextByte() & 0xFF;
+                addressString = buildDebugAddressString();
                 break;
             case SET_ADDRESS_ZERO_PAGE_X:
                 // $nn,X
-                addressBus = ((getNextByte()+X)&0xFF);
+                addressBus = ((getNextByte() + X) & 0xFF);
+                addressString = buildDebugAddressString();
+                break;
+            case SET_ADDRESS_ZERO_PAGE_Y:
+                // $nn,X
+                addressBus = ((getNextByte() + Y) & 0xFF);
+                addressString = buildDebugAddressString();
                 break;
             case SET_ADDRESS_ZERO_PAGE_INDIRECT_X:
                 // ($nn,X)
-                wrk = ((getNextByte()+X)&0xFF);
-                addressBus = (mem.peek(wrk)<<8)|mem.peek(wrk+1);
+                wrk = ((getNextByte() + X) & 0xFF);
+                addressBus = mem.peek(wrk) | (mem.peek(wrk + 1) << 8);
+                addressString = "ZPG:" + Utils.toHex2(wrk) + "  " + buildDebugAddressString();
                 break;
             case SET_ADDRESS_ZERO_PAGE_INDIRECT_Y:
-                wrk = ((getNextByte())&0xFF);
-                addressBus = (mem.peek(wrk)<<8)|mem.peek(wrk+1);
-                addressBus = (addressBus+Y)&0xFFFF;
+                // ($nn),Y
+                wrk = ((getNextByte()) & 0xFF);
+                addressBus = mem.peek(wrk) | (mem.peek(wrk + 1) << 8);
+                addressBus = (addressBus + Y) & 0xFFFF;
+                addressString = "ZPG:" + Utils.toHex2(wrk) + "  " + buildDebugAddressString();
                 break;
+            case SET_ADDRESS_RELATIVE:
+                wrk = ((getNextByte()) & 0xFF);
+                addressBus = addSignedByteToWord(PC, wrk);
+                addressString = buildDebugAddressString();
+                break;
+
+            case GET_NEXT_BYTE:
+                dataBus = getNextByte() & 0xFF;
+                addressString = "0x" + Utils.toHex2(dataBus);
+                break;
+
+            case FETCH_BYTE_FROM_ADDRESS:
+                dataBus = mem.peek(addressBus);
+                break;
+            case STORE_BYTE_AT_ADDRESS:
+                mem.poke(addressBus, dataBus);
+                break;
+            case FETCH_A:
+                dataBus = A;
+                break;
+            case STORE_A:
+                setA(dataBus);
+                break;
+            case AND:
+                setA(A & dataBus);
+                break;
+            case ORA:
+                setA(A | dataBus);
+                break;
+            case EOR:
+                wrk = (dataBus & 0xff) ^ (A & 0xff);
+                setA(wrk);
+                break;
+            case STA:
+                mem.poke(addressBus, A);
+                break;
+            case STX:
+                mem.poke(addressBus, X);
+                break;
+            case STY:
+                mem.poke(addressBus, Y);
+                break;
+
+            // LOADS
+            case LDA:
+                setA(dataBus);
+                break;
+            case LDX:
+                setX(dataBus);
+                break;
+            case LDY:
+                setY(dataBus);
+                break;
+            case INC:
+                // Increment memory by 1
+                wrk = mem.peek(addressBus);
+                wrk = (wrk + 1) & 0xff;
+                wrk = setFlagsFromValue(wrk);
+                mem.poke(addressBus, wrk);
+                break;
+            case DEC:
+                wrk = mem.peek(addressBus);
+                wrk = (wrk - 1) & 0xff;
+                wrk = setFlagsFromValue(wrk);
+                mem.poke(addressBus, wrk);
+                break;
+            // COMPARE
+            case CMP:
+                compare(A, dataBus);
+                break;
+            case CPX:
+                compare(X, dataBus);
+                break;
+            case CPY:
+                compare(Y, dataBus);
+                break;
+
+            // TRANSFERS
+            case TAX:
+                setX(A);
+                break;
+            case TXA:
+                setA(X);
+                break;
+            case TAY:
+                setY(A);
+                break;
+            case TYA:
+                setA(Y);
+                break;
+            case TXS:
+                SP = X & 0xff;
+                break;
+            case TSX:
+                setX(SP & 0xff);
+                break;
+
+            // FLAG OPERATIONS
+            case CLC:
+                setFlagConditional(FLAG_CARRY, false);
+                break;
+            case CLD:
+                setFlagConditional(FLAG_DECIMAL_MODE, false);
+                break;
+            case CLI:
+                setFlagConditional(FLAG_INTERRUPT_DISABLE, false);
+                break;
+            case CLV:
+                setFlagConditional(FLAG_OVERFLOW, false);
+                break;
+            case SEC:
+                setFlagConditional(FLAG_CARRY, true);
+                break;
+            case SED:
+                setFlagConditional(FLAG_DECIMAL_MODE, true);
+                break;
+            case SEI:
+                setFlagConditional(FLAG_INTERRUPT_DISABLE, true);
+                break;
+
+            // JUMPS
+            case JSR:
+                pushWord(PC - 1);
+                PC = addressBus;
+                break;
+            case JMP:
+                PC = addressBus;
+                break;
+            // RETURN
+            case RTS:
+                PC = popWord() + 1;
+                break;
+            case RTI:
+                // P from Stack, PC from Stack
+                FL = popByte(); // pushByte(FL);
+                PC = popWord(); // pushWord(PC);
+                break;
+            // BRANCH - BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS
+            case BCC:
+                branchConditional(addressBus, (FL & FLAG_CARRY) == 0);
+                break;
+            case BCS:
+                branchConditional(addressBus, (FL & FLAG_CARRY) > 0);
+                break;
+            case BEQ:
+                branchConditional(addressBus, (FL & FLAG_ZERO) != 0);
+                break;
+            case BNE:
+                branchConditional(addressBus, (FL & FLAG_ZERO) == 0);
+                break;
+            case BMI:
+                branchConditional(addressBus, (FL & FLAG_NEGATIVE) > 0);
+                break;
+            case BPL:
+                branchConditional(addressBus, (FL & FLAG_NEGATIVE) == 0);
+                break;
+            case BVC:
+                branchConditional(addressBus, (FL & FLAG_OVERFLOW) == 0);
+                break;
+            case BVS:
+                branchConditional(addressBus, (FL & FLAG_OVERFLOW) > 0);
+                break;
+
+                // BINARY
+            case BIT:
+                opBIT(dataBus);
+                break;
+            // STACK
+            case PHA:
+                pushByte(A);
+                break;
+            case PHP:
+                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);// | 0x10);
+                break;
+            case PLA:
+                setA(popByte());
+                break;
+            case PLP:
+                FL = popByte();
+                break;
+
+            case DEX:
+                if (X == 0)
+                    setX(0xff);
+                else
+                    setX(X - 1);
+                break;
+            case DEY:
+                if (Y == 0)
+                    setY(0xff);
+                else
+                    setY(Y - 1);
+                break;
+            case INY:
+                if (Y == 0xff)
+                    setY(0);
+                else
+                    setY(Y + 1);
+                break;
+            case INX:
+                if (X == 0xff)
+                    setX(0);
+                else
+                    setX(X + 1);
+                break;
+
+            case ROL:
+                wrk = (dataBus & 0xff) << 1;
+                if ((FL & 1) > 0)
+                    wrk += 1;
+
+                setFlagConditional(FLAG_CARRY, (wrk & 0x100) > 0);
+
+                setFlagsFromValue(wrk);
+                wrk = wrk & 0xff;
+
+                // setA(val);
+                //mem.poke(ac.addr, wrk);
+                dataBus = wrk;
+
+                break;
+
+            case ROR:
+                int lsb = dataBus & 1;
+                wrk = (dataBus & 0xff) >> 1;
+
+                if ((FL & FLAG_CARRY) > 0) {
+                    wrk = wrk + 0x80;
+                }
+
+                setFlagConditional(FLAG_CARRY, lsb > 0);
+
+                setFlagsFromValue(wrk);
+                wrk = wrk & 0xff;
+                dataBus = wrk;
+
+                break;
+            case ASL:
+                wrk = (dataBus & 0xff) << 1;
+
+                setFlagConditional(FLAG_CARRY, wrk > 0xff);
+
+                setFlagsFromValue(wrk);
+                wrk = wrk & 0xff;
+
+                dataBus = wrk;
+                break;
+            case LSR:
+                wrk = dataBus >> 1;
+
+                setFlagConditional(FLAG_CARRY, (dataBus & 1) != 0);
+
+                unsetFlag(FLAG_NEGATIVE);
+
+                setFlagConditional(FLAG_ZERO, wrk == 0);
+                dataBus = wrk;
+                break;
+            case ADC:
+                setA(addWithCarry(dataBus, A));
+                break;
+            case SBC:
+                wrk = dataBus;
+                wrk = subtractWithCarry(A, wrk & 0xff);
+                setA(wrk & 0xff);
+                break;
+
+            default:
+                System.out.println("MicroOp not implemented: " + op.name());
         }
+    }
+
+    public void tick2() {
+        cycles += 4;
+        tickCount++;
+
+
+        int startinggPC = PC;
+        int currentInstruction = mem.peek(PC++);
+
+        String hardwareState = Debug.getHardwareSummary(this);
+
+        String instructionName = codeTableManager.codeTableMain.getInstructionName(currentInstruction);
+        String dbg = "PC:0x" + Utils.toHex4(startinggPC) + "  " + hardwareState + "  0x" + Utils.toHex2(currentInstruction) + " " + instructionName;
+        addressString = "";
+
+        MicroOp[] microOps = codeTableManager.codeTableMain.getInstructionCode(currentInstruction);
+
+        for (MicroOp microOp : microOps) {
+            doMicroOp(microOp);
+        }
+
+        dbg += "  " + addressString;
+        System.out.println(dbg);
     }
 
 
     public void tick(int callIndex) {
+
         int val;
 
         cycles += 4;
@@ -416,7 +745,7 @@ public class CPU6502 {
                 // This opcode ASLs the contents of a memory location and then
                 // ORs the result with the accumulator.
                 val = (ac.val & 0xff) << 1;
-                setFlagConditionally(FLAG_CARRY, val > 0xff);
+                setFlagConditional(FLAG_CARRY, val > 0xff);
                 setFlagsFromValue(val);
                 val = val & 0xff;
 
@@ -429,7 +758,7 @@ public class CPU6502 {
 
                 val = (ac.val & 0xff) << 1;
 
-                setFlagConditionally(FLAG_CARRY, val > 0xff);
+                setFlagConditional(FLAG_CARRY, val > 0xff);
 
                 setFlagsFromValue(val);
                 val = val & 0xff;
@@ -441,7 +770,7 @@ public class CPU6502 {
                 if ((FL & 1) > 0)
                     val += 1;
 
-                setFlagConditionally(FLAG_CARRY, (val & 0x100) > 0);
+                setFlagConditional(FLAG_CARRY, (val & 0x100) > 0);
 
                 setFlagsFromValue(val);
                 val = val & 0xff;
@@ -459,7 +788,7 @@ public class CPU6502 {
                     val = val + 0x80;
                 }
 
-                setFlagConditionally(FLAG_CARRY, lsb > 0);
+                setFlagConditional(FLAG_CARRY, lsb > 0);
 
                 setFlagsFromValue(val);
                 val = val & 0xff;
@@ -485,13 +814,13 @@ public class CPU6502 {
             case LSR:
                 val = ac.val >> 1;
 
-                setFlagConditionally(FLAG_CARRY, (ac.val & 1) != 0);
+                setFlagConditional(FLAG_CARRY, (ac.val & 1) != 0);
 
                 mem.poke(ac.addr, val);
 
                 unsetFlag(FLAG_NEGATIVE);
 
-                setFlagConditionally(FLAG_ZERO, val == 0);
+                setFlagConditional(FLAG_ZERO, val == 0);
                 // uint8_t t = v >> 1;
                 // cf((v&0x1)!=0);
                 // SET_ZF(t);
@@ -552,7 +881,7 @@ public class CPU6502 {
         FL &= ~(flag);
     }
 
-    private void setFlagConditionally(int flag, boolean condition) {
+    private void setFlagConditional(int flag, boolean condition) {
         if (condition) {
             FL |= flag;
         } else {
@@ -560,14 +889,19 @@ public class CPU6502 {
         }
     }
 
+    private void branchConditional(int address, boolean condition) {
+        if (condition) PC = address;
+    }
+
+
     // Compare values and set flags as result.
     public void compare(int v1, int v2) {
 
         int cmp = v1 - v2;
 
-        setFlagConditionally(FLAG_ZERO, cmp == 0);
-        setFlagConditionally(FLAG_CARRY, v1 >= v2);
-        setFlagConditionally(FLAG_NEGATIVE, (cmp & 0x80) > 0);
+        setFlagConditional(FLAG_ZERO, cmp == 0);
+        setFlagConditional(FLAG_CARRY, v1 >= v2);
+        setFlagConditional(FLAG_NEGATIVE, (cmp & 0x80) > 0);
 
         // System.out.println(" campared "+Utils.toHex2(v1)+" to "+Utils.toHex2(v2));
     }
@@ -577,8 +911,8 @@ public class CPU6502 {
     private int setFlagsFromValue(int val) {
 
         val = val & 0xff;
-        setFlagConditionally(FLAG_ZERO, val == 0);
-        setFlagConditionally(FLAG_NEGATIVE, (val & 0x80) > 0);
+        setFlagConditional(FLAG_ZERO, val == 0);
+        setFlagConditional(FLAG_NEGATIVE, (val & 0x80) > 0);
 
         return val & 0xff;
     }
@@ -601,11 +935,11 @@ public class CPU6502 {
             t = a + v + ((FL & FLAG_CARRY) > 0 ? 1 : 0);
         }
 
-        setFlagConditionally(FLAG_CARRY, t > 0xff);
+        setFlagConditional(FLAG_CARRY, t > 0xff);
 
         t = t & 0xff;
 
-        setFlagConditionally(FLAG_OVERFLOW, (((a ^ v) & 0x80) == 0) && (((a ^ t) & 0x80) > 0));
+        setFlagConditional(FLAG_OVERFLOW, (((a ^ v) & 0x80) == 0) && (((a ^ t) & 0x80) > 0));
 
         // setFlagConditionally(FLAG_ZERO, val == 0);
 
@@ -631,9 +965,9 @@ public class CPU6502 {
             t = a - v - ((FL & FLAG_CARRY) > 0 ? 0 : 1);
         }
 
-        setFlagConditionally(FLAG_CARRY, t >= 0);
+        setFlagConditional(FLAG_CARRY, t >= 0);
 
-        setFlagConditionally(FLAG_OVERFLOW, ((a ^ t) & 0x80) > 0 && ((a ^ v) & 0x80) > 0);
+        setFlagConditional(FLAG_OVERFLOW, ((a ^ t) & 0x80) > 0 && ((a ^ v) & 0x80) > 0);
 
         return t & 0xff;
     }
@@ -663,6 +997,7 @@ public class CPU6502 {
     public int getNextWord() {
         int oprnd = mem.peek(PC++) & 0xff;
         oprnd = (oprnd) + ((mem.peek(PC++) & 0xff) << 8);
+        //System.out.println("getNextWord: 0x"+Utils.toHex4(oprnd));
         return oprnd;
     }
 
@@ -710,11 +1045,11 @@ public class CPU6502 {
     public void opBIT(int val) {
         int cmp = (A & 0xff) & (val & 0xff);
 
-        setFlagConditionally(FLAG_ZERO, cmp == 0);
+        setFlagConditional(FLAG_ZERO, cmp == 0);
 
-        setFlagConditionally(FLAG_OVERFLOW, (val & (1 << 6)) > 0);
+        setFlagConditional(FLAG_OVERFLOW, (val & (1 << 6)) > 0);
 
-        setFlagConditionally(FLAG_NEGATIVE, (val & (1 << 7)) > 0);
+        setFlagConditional(FLAG_NEGATIVE, (val & (1 << 7)) > 0);
 
     }
 

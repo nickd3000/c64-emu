@@ -10,11 +10,11 @@ public class Loader {
 		//String gamePath = "resource/games/";
 		//String path = gamePath+"jetsetwi.prg";
 		//String path = gamePath+"finders.prg";
-		 String path = gamePath+"huntersm.prg";
+		// String path = gamePath+"huntersm.prg";
 		//String path = gamePath+"bombjack.prg";
 		// String path = gamePath+"1942.prg";
 		//String path = gamePath+"wizball.prg";
-		// String path = gamePath+"finders2.prg";
+		String path = gamePath+"finders2.prg";
 		// String path = gamePath+"brucelee.prg";
 		// String path = gamePath+"impossiblemission.prg";
 		//String path = gamePath+"willy.prg";

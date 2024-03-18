@@ -164,10 +164,10 @@ public class CIA1 {
 			/**
 			 * if bit 7 is set, enable selected mask of interrupts, else disable them
 			 */
-			if (ISSET_BIT(v, 0))
-				timer_a_irq_enabled_ = ISSET_BIT(v, 7);
-			if (ISSET_BIT(v, 1))
-				timer_b_irq_enabled_ = ISSET_BIT(v, 7);
+			if (TEST_BIT(v, 0))
+				timer_a_irq_enabled_ = TEST_BIT(v, 7);
+			if (TEST_BIT(v, 1))
+				timer_b_irq_enabled_ = TEST_BIT(v, 7);
 			break;
 		/* control timer a */
 		case 0xe:
@@ -258,7 +258,7 @@ public class CIA1 {
 			if (timer_a_irq_triggered_ || timer_b_irq_triggered_) {
 				retval |= (1 << 7); // IRQ occured
 				if (timer_a_irq_triggered_)
-					retval |= (1 << 0);
+					retval |= 1;
 				if (timer_b_irq_triggered_)
 					retval |= (1 << 1);
 			}
@@ -273,7 +273,7 @@ public class CIA1 {
 		return retval;
 	}
 
-	public boolean ISSET_BIT(int v, int bit) {
+	public boolean TEST_BIT(int v, int bit) {
 		if ((v & (1 << bit)) > 0)
 			return true;
 		return false;

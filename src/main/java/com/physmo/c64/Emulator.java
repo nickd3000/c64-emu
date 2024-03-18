@@ -24,7 +24,7 @@ public class Emulator {
         // cpu.reset();
         // runToAddress(cpu, 0xFD88); // never gets to 0xFD90 ??
 
-        rig.runForCycles(500000 * 2);
+        rig.runForCycles(2000000);
 
         // runToFlagSet(cpu, 0b01000000);
 
