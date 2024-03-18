@@ -8,7 +8,16 @@ import java.util.Map;
 
 public class CodeTable {
 
+    public MicroOp[][] getOpsList() {
+        return opsList;
+    }
+
     MicroOp[][] opsList = new MicroOp[500][];
+
+    public Map<Integer, String> getNames() {
+        return names;
+    }
+
     Map<Integer, String> names = new HashMap<>();
     Map<String, Integer> opCodeLookup = new HashMap<>();
     String name;

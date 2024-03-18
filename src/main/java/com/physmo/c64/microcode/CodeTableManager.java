@@ -1,6 +1,9 @@
 package com.physmo.c64.microcode;
 
+import com.physmo.c64.Utils;
+
 import java.util.List;
+import java.util.Map;
 
 public class CodeTableManager {
     public CodeTable codeTableMain;
@@ -8,7 +11,19 @@ public class CodeTableManager {
     public CodeTableManager() {
         codeTableMain = new CodeTable("Main");
         initCodeTableMain();
+        opcodeReport();
+
     }
+
+    public void opcodeReport() {
+        System.out.println("OpCode report.");
+        Map<Integer, String> names = codeTableMain.getNames();
+
+        for (Integer i : names.keySet()) {
+            System.out.println(Utils.toHex2(i) +"  "+ names.get(i));
+        }
+    }
+
 
     public void initCodeTableMain() {
         codeTableMain.define(0x00, "BRK", MicroOp.BRK);

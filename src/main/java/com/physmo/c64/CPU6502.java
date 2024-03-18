@@ -28,21 +28,14 @@ public class CPU6502 {
     MEMC64 mem = null;
     int A; // Accumulator register
     int X; // X register
-    // int debugAtAddress = 0xE394; // *** BASIC cold start entry point
-    // int debugAtAddress = 0xE421; // E421
-    // int debugAtAddress = 0xE5D6; // Key detected?
-    // int debugAtAddress = 0xB8D7;
     int Y; // Y register
     int SP = 0xFF; // Stack pointer
     int PC; // Program counter
     int FL; // Flags
     int SB = 0x0100; // Stack base
-    int interruptOcurred = 0;
     boolean unitTest = false;
-    int debugAtAddress = -1; // Disable
     int cycles = 0;
     int tickCount = 0;
-    int previousPC = 0;
     int addressBus = 0;
     int dataBus = 0;
     String addressString = "";
@@ -350,7 +343,7 @@ public class CPU6502 {
                 branchConditional(addressBus, (FL & FLAG_OVERFLOW) > 0);
                 break;
 
-                // BINARY
+            // BINARY
             case BIT:
                 opBIT(dataBus);
                 break;
@@ -359,7 +352,7 @@ public class CPU6502 {
                 pushByte(A);
                 break;
             case PHP:
-                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);// | 0x10);
+                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);
                 break;
             case PLA:
                 setA(popByte());
@@ -483,370 +476,6 @@ public class CPU6502 {
     }
 
 
-    public void tick(int callIndex) {
-
-        int val;
-
-        cycles += 4;
-        tickCount++;
-
-        // if (PC==debugAtAddress) debugOutput = true;
-        // if((FL&FLAG_OVERFLOW)>0) debugOutput = true;
-
-        // if (PC==debugAtAddress) Debug.dumpMemory(this, 0);
-        // debugOutput = true;
-
-        // if (tickCount>700000*4) debugOutput = true;
-        // if (PC==0xbdcd) debugOutput=true;
-
-        if (unitTest == true && tickCount > 700000 * 43)
-            debugOutput = true;
-
-        int entryPC = PC;
-        int currentInstruction = mem.peek(PC++);
-        // int oprnd=0, val=0, addr=0;
-        debugCallIndex = callIndex;
-
-        AddressContainer ac = new AddressContainer(); // helper object
-
-        // This is time consuming - diable if not required.
-        // buildStateString(); // Record machine state before operation for debug
-        // output.
-
-        // find op enum
-        InstructionDefinition def = InstructionDefinition.getEnumFromId(currentInstruction);
-        if (def == null) {
-            System.out.println("Unhandled opcode: " + Utils.toHex2(currentInstruction));
-            //Debug.logUnhandled(this, " enum: " + Utils.toHex2(currentInstruction), callIndex, entryPC);
-            return;
-        }
-
-        // setFlag5();
-        setFlag(FLAG_UNUSED);
-
-
-        // String defDescription = def.getDescription();
-        // System.out.println(defDescription);
-        COMMAND command = def.getCommand();
-        ADDRMODE addrmode = def.getAddressMode();
-        processAddressMode(ac, addrmode);
-
-        // .C:fcea D0 03 BNE $FCEF - A:30 X:05 Y:0A SP:ff ..-..I.C 39
-        if (this.debugOutput && previousPC != entryPC) {// && !debugSkipLine(entryPC)) {
-            Debug.buildStateString(this);
-            String output = Utils.toHex4(entryPC) + "  ";
-            output += Utils.toHex2(currentInstruction) + ac.bytesRead;
-            output = Utils.padToLength(output, 15);
-            output += def.getDescription();
-            output = Utils.padToLength(output, 30) + stateString;
-            output += " " + tickCount;
-            System.out.println(output);
-            //System.out.println("previousPC!=entryPC" + previousPC + "   " + entryPC);
-        }
-
-        switch (command) {
-            case BRK:
-                // NOTE: not sure if PC needs +1 here
-                //
-                pushWord(PC + 1); // PC+1
-                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);
-                PC = getWord(0xfffe);
-                setFlag(FLAG_INTERRUPT_DISABLE);
-                setFlag(FLAG_BREAK);
-                break;
-            case LDX:
-                setX(ac.val);
-                break;
-            case TXS:
-                SP = X & 0xff;
-                break;
-            case TSX:
-                setX(SP & 0xff);
-
-                break;
-            case CLD:
-                unsetFlag(FLAG_DECIMAL_MODE);
-                break;
-            case JSR:
-                pushWord(PC - 1);
-                PC = ac.addr;
-                break;
-            case RTS:
-                PC = popWord() + 1;
-                if (PC == -1)
-                    System.out.println("fuck b");
-                break;
-            case LDA:
-                setA(ac.val);
-                break;
-            case CMP:
-                compare(A, ac.val);
-                break;
-            case BNE:
-                if ((FL & 2) == 0) {
-                    PC = ac.addr;
-                    if (PC == -1)
-                        System.out.println("fuck c");
-                }
-                break;
-
-            case STX:
-                mem.poke(ac.addr, X);
-                break;
-            case STA:
-                mem.poke(ac.addr, A);
-                break;
-            case DEX:
-                if (X == 0)
-                    setX(0xff);
-                else
-                    setX(X - 1);
-                break;
-            case DEY:
-                if (Y == 0)
-                    setY(0xff);
-                else
-                    setY(Y - 1);
-                break;
-            case INY:
-                if (Y == 0xff)
-                    setY(0);
-                else
-                    setY(Y + 1);
-                break;
-            case INX:
-                if (X == 0xff)
-                    setX(0);
-                else
-                    setX(X + 1);
-                break;
-            case BEQ:
-                if ((FL & (2)) == 2) {
-                    PC = ac.addr;
-                }
-                break;
-            case JMP:
-                PC = ac.addr;
-                break;
-            case AND:
-                setA(A & ac.val);
-                break;
-            case ORA:
-                setA(A | ac.val);
-
-                break;
-            case TAY:
-                setY(A);
-                break;
-            case TYA:
-                setA(Y);
-                break;
-            case LDY:
-                setY(ac.val);
-                break;
-            case STY:
-                mem.poke(ac.addr, Y);
-                break;
-            case INC:
-                val = (ac.val + 1) & 0xff;
-                val = setFlagsFromValue(val);
-                mem.poke(ac.addr, val);
-                break;
-            case DEC:
-                val = ac.val;
-                val = (val - 1) & 0xff;
-                val = setFlagsFromValue(val);
-                mem.poke(ac.addr, val);
-                break;
-
-            case TAX:
-                setX(A);
-                break;
-            case TXA:
-                setA(X);
-                break;
-            case CLC:
-                unsetFlag(FLAG_CARRY);
-                break;
-            case BCS: // Branch if carry set
-                if ((FL & FLAG_CARRY) > 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case BVS: // Branch if overflow set.
-                if ((FL & FLAG_OVERFLOW) > 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case BVC: // Branch if overflow set.
-                if ((FL & FLAG_OVERFLOW) == 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case BPL:
-                if ((FL & 0x80) == 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case ADC:
-                setA(addWithCarry(ac.val, A));
-                break;
-            case BCC:
-                if ((FL & 1) == 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case CPX:
-                compare(X, ac.val);
-                break;
-            case BMI:
-                if ((FL & 0x80) > 0) {
-                    PC = ac.addr;
-                }
-                break;
-            case SEI:
-                setFlag(FLAG_INTERRUPT_DISABLE);
-                break;
-            case CLI:
-                unsetFlag(FLAG_INTERRUPT_DISABLE);
-                break;
-            case CLV:
-                unsetFlag(FLAG_OVERFLOW);
-                break;
-            case SEC:
-                setFlag(FLAG_CARRY);
-                break;
-            case SED:
-                setFlag(FLAG_DECIMAL_MODE);
-                break;
-            case CPY:
-                compare(Y, ac.val);
-                break;
-            case PHA:
-                pushByte(A);
-                break;
-            case PLA:
-                setA(popByte());
-                break;
-            case INS:
-                // Illigal opcode:
-                // This opcode INCs the contents of a memory location and
-                // then SBCs the result from the A register.
-                val = (ac.val + 1) & 0xff;
-                val = setFlagsFromValue(val);
-                mem.poke(ac.addr, val);
-
-                val = subtractWithCarry(A, val & 0xff);
-                setA(val & 0xff);
-
-                break;
-            case ASO:
-                // Illigal opcode:
-                // This opcode ASLs the contents of a memory location and then
-                // ORs the result with the accumulator.
-                val = (ac.val & 0xff) << 1;
-                setFlagConditional(FLAG_CARRY, val > 0xff);
-                setFlagsFromValue(val);
-                val = val & 0xff;
-
-                mem.poke(ac.addr, val); // Should we update the memory location too?
-
-                setA(A | ac.val);
-
-                break;
-            case ASL:
-
-                val = (ac.val & 0xff) << 1;
-
-                setFlagConditional(FLAG_CARRY, val > 0xff);
-
-                setFlagsFromValue(val);
-                val = val & 0xff;
-
-                mem.poke(ac.addr, val);
-                break;
-            case ROL:
-                val = (ac.val & 0xff) << 1;
-                if ((FL & 1) > 0)
-                    val += 1;
-
-                setFlagConditional(FLAG_CARRY, (val & 0x100) > 0);
-
-                setFlagsFromValue(val);
-                val = val & 0xff;
-
-                // setA(val);
-                mem.poke(ac.addr, val);
-
-                break;
-
-            case ROR:
-                int lsb = ac.val & 1;
-                val = (ac.val & 0xff) >> 1;
-
-                if ((FL & FLAG_CARRY) > 0) {
-                    val = val + 0x80;
-                }
-
-                setFlagConditional(FLAG_CARRY, lsb > 0);
-
-                setFlagsFromValue(val);
-                val = val & 0xff;
-
-                mem.poke(ac.addr, val);
-
-                break;
-            case SBC:
-                val = ac.val;
-                val = subtractWithCarry(A, val & 0xff);
-                setA(val & 0xff);
-                break;
-            case PHP:
-                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);// | 0x10);
-                break;
-            case PLP:
-                FL = popByte();
-                break;
-            case BIT:
-                val = ac.val; // peek(oprnd);
-                opBIT(val);
-                break;
-            case LSR:
-                val = ac.val >> 1;
-
-                setFlagConditional(FLAG_CARRY, (ac.val & 1) != 0);
-
-                mem.poke(ac.addr, val);
-
-                unsetFlag(FLAG_NEGATIVE);
-
-                setFlagConditional(FLAG_ZERO, val == 0);
-                // uint8_t t = v >> 1;
-                // cf((v&0x1)!=0);
-                // SET_ZF(t);
-                // SET_NF(t);
-
-                break;
-            case EOR:
-                val = (ac.val & 0xff) ^ (A & 0xff);
-                setA(val);
-                break;
-            case RTI:
-                // P from Stack, PC from Stack
-                FL = popByte(); // pushByte(FL);
-                PC = popWord(); // pushWord(PC);
-                break;
-            case NOP:
-                break;
-            default:
-                Debug.logUnhandled(this, "OPCODE ", callIndex, entryPC);
-                System.out.println("unhandled");
-                break;
-        }
-        previousPC = entryPC;
-    }
-
-
     // trigger interrupt irq
     public void irq() {
         if (((FL & FLAG_INTERRUPT_DISABLE) == 0)) {
@@ -896,14 +525,11 @@ public class CPU6502 {
 
     // Compare values and set flags as result.
     public void compare(int v1, int v2) {
-
         int cmp = v1 - v2;
 
         setFlagConditional(FLAG_ZERO, cmp == 0);
         setFlagConditional(FLAG_CARRY, v1 >= v2);
         setFlagConditional(FLAG_NEGATIVE, (cmp & 0x80) > 0);
-
-        // System.out.println(" campared "+Utils.toHex2(v1)+" to "+Utils.toHex2(v2));
     }
 
     // This is only for bytes and can modify the returned value.
@@ -918,12 +544,9 @@ public class CPU6502 {
     }
 
     private int addWithCarry(int a, int v) {
-
         int t;
 
         if ((FL & FLAG_DECIMAL_MODE) > 0) {
-            // System.out.println("Called ADC decimal mode");
-
             t = (a & 0xf) + (v & 0xf) + ((FL & FLAG_CARRY) > 0 ? 1 : 0);
             if (t > 0x09)
                 t += 0x6;
@@ -940,8 +563,6 @@ public class CPU6502 {
         t = t & 0xff;
 
         setFlagConditional(FLAG_OVERFLOW, (((a ^ v) & 0x80) == 0) && (((a ^ t) & 0x80) > 0));
-
-        // setFlagConditionally(FLAG_ZERO, val == 0);
 
         return t & 0xff;
     }
@@ -1037,10 +658,6 @@ public class CPU6502 {
         return (v2 << 8) + v1;
     }
 
-    public void opLDX(int val) {
-
-        setX(val);
-    }
 
     public void opBIT(int val) {
         int cmp = (A & 0xff) & (val & 0xff);
@@ -1053,112 +670,6 @@ public class CPU6502 {
 
     }
 
-    // Pushing flags to the stack does some extra work.
-    public void pushFlags() {
-        // Pushing flags also sets the break flag.
-        pushByte(FL | FLAG_BREAK | FLAG_UNUSED);
-    }
-
-    // based on the address mode, get some stuff, increase PC accordingly.
-    public void processAddressMode(AddressContainer ac, ADDRMODE mode) {
-        int peeked = 0;
-        boolean enableBytesRead = true;
-        switch (mode) {
-            case IMDT:
-                peeked = getNextByte();
-                ac.val = peeked;
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                break;
-            case IMPL:
-                break;
-            case ABS:
-                peeked = getNextWord();
-                ac.addr = peeked;
-                ac.val = mem.peek(ac.addr);
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked & 0xff) + " " + Utils.toHex2((peeked >> 8) & 0xff);
-                break;
-            case ABS_X:
-                peeked = getNextWord();
-                ac.addr = peeked + X;
-                ac.val = mem.peek(ac.addr);
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked & 0xff) + " " + Utils.toHex2((peeked >> 8) & 0xff);
-                break;
-            case ABS_Y:
-                peeked = getNextWord();
-                ac.addr = peeked + Y;
-                ac.val = mem.peek(ac.addr);
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked & 0xff) + " " + Utils.toHex2((peeked >> 8) & 0xff);
-                break;
-            case REL:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.val = peeked;
-                ac.addr = addSignedByteToWord(PC, ac.val);
-                break;
-            case ZPG:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.addr = peeked;
-                ac.val = mem.peek(peeked);
-                break;
-            case ZPG_X:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.addr = (peeked + X) & 0xff;
-                ac.val = mem.peek(ac.addr);
-                break;
-            case ZPG_Y:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.addr = (peeked + Y) & 0xff;
-                ac.val = mem.peek(ac.addr);
-                break;
-            case IND_Y:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.addr = getWord(peeked) + Y;
-                ac.val = mem.peek(ac.addr);
-                break;
-            case IND:
-                peeked = getNextWord();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked & 0xff) + " " + Utils.toHex2((peeked >> 8) & 0xff);
-                ac.addr = getWord(peeked);
-                ac.val = mem.peek(ac.addr);
-                break;
-            case A:
-                ac.val = A;
-                ac.addr = -1; // Special address -1 = register A.
-                break;
-            case X_IND:
-                peeked = getNextByte();
-                if (enableBytesRead)
-                    ac.bytesRead += " " + Utils.toHex2(peeked);
-                ac.addr = getWord((peeked + X) & 0xff);
-                ac.val = mem.peek(ac.addr);
-                break;
-            default:
-                Debug.logUnhandled(this, "address mode" + mode.toString(), 0, 0);
-        }
-
-    }
-
-    public boolean debugSkipLine(int addr) {
-
-        // if (addr >= 0xE5CD && addr <= 0xE5D4)
-        // return true;
-
-        return false;
-    }
 
 }
 

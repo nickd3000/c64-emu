@@ -108,7 +108,7 @@ public class Rig {
 				cpu.debugOutput = true;
 			}
 
-			cpu.tick(i);
+			cpu.tick2();
 			vic.VICStub(cpu, basicDisplay);
 
 			if (cpu.debugOutput) {
@@ -129,7 +129,7 @@ public class Rig {
 				cpu.debugOutput = true;
 			}
 
-			cpu.tick(i);
+			cpu.tick2();
 			vic.VICStub(cpu, basicDisplay);
 
 			if (cpu.debugOutput) {
