@@ -16,9 +16,10 @@ public class CPU6502 {
     public static int FLAG_OVERFLOW = 0b01000000;
     public static int FLAG_NEGATIVE = 0b10000000;
     private static String romPath = "/Users/nick/dev/emulatorsupportfiles/c64/rom/";
+    private static String testPath = "/Users/nick/dev/emulatorsupportfiles/c64/tests/";
     public int firstUnimplimentedInstructionIndex = -1;
     public boolean lg = false;
-    public boolean debugOutput = true;
+    public boolean debugOutput = false;
     public boolean debugOutputIo = false;
     public int debugCallIndex = 0;
     public String stateString = "";
@@ -39,6 +40,11 @@ public class CPU6502 {
     int addressBus = 0;
     int dataBus = 0;
     String addressString = "";
+    boolean disableNmiAndIrq = false;
+    boolean haltEmulation = false;
+    String dbgHardwareState;
+    String dbgInstructionName;
+    String dbgString;
 
     public void attachHardware(MEMC64 mem) {
         this.mem = mem;
@@ -50,15 +56,17 @@ public class CPU6502 {
 
         try {
             // NOTE: the 65C02 is a different chip so we don't use that test file.
-            Utils.ReadFileBytesToRAMMemoryLocation("resource/tests/6502_functional_test-2.bin", this, 0x000);
+            Utils.ReadFileBytesToRAMMemoryLocation(testPath + "6502_functional_test.bin", this, 0x0000);
+            //Utils.ReadFileBytesToRAMMemoryLocation(testPath+"6502_functional_test_400.bin", this, 0x0400);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // 0 = 0x2f / was ff
-        mem.RAM[0] = 0x2F; // set CPU control lines (for bank switching)
-        mem.RAM[1] = 0x07; // 07 set CPU control lines (for bank switching)
         FL = 0;
+
+        setFlag(FLAG_UNUSED);
+        unsetFlag(FLAG_DECIMAL_MODE);
+        setFlag(FLAG_INTERRUPT_DISABLE);
 
         // start debug
         PC = 0x0400;
@@ -111,7 +119,6 @@ public class CPU6502 {
         return "&" + Utils.toHex4(addressBus) + ":0x" + Utils.toHex2(mem.peek(addressBus)) + "  PLA:" + Utils.toHex2(mem.RAM[1]);
     }
 
-
     private void doMicroOp(MicroOp op) {
 
         int wrk = 0;
@@ -119,13 +126,18 @@ public class CPU6502 {
         switch (op) {
 
             case BRK:
-                // NOTE: not sure if PC needs +1 here
+
                 //
-                pushWord(PC + 1); // PC+1
-                pushByte(FL | FLAG_BREAK | FLAG_UNUSED);
-                PC = getWord(0xfffe);
-                setFlag(FLAG_INTERRUPT_DISABLE);
                 setFlag(FLAG_BREAK);
+                setFlag(FLAG_UNUSED);
+
+                pushWord(PC + 1); // PC+1
+                pushByte(FL | 0x10);//FLAG_ZERO);
+
+                setFlag(FLAG_INTERRUPT_DISABLE);
+
+                PC = getWord(0xfffe);
+
                 break;
             case NOP:
                 break;
@@ -141,6 +153,7 @@ public class CPU6502 {
                 wrk = getNextWord();
                 addressBus = mem.peekWord(wrk);
                 addressString = buildDebugAddressString();
+                addressString += " $" + Utils.toHex4(wrk) + " ";
                 break;
             case SET_ADDRESS_ABSOLUTE_X:
                 // $nnnn,X
@@ -452,18 +465,21 @@ public class CPU6502 {
     }
 
     public void tick2() {
+        if (haltEmulation) return;
+
         cycles += 4;
         tickCount++;
 
 
-        int startinggPC = PC;
+        int startingPC = PC;
         int currentInstruction = mem.peek(PC++);
 
-        String hardwareState = Debug.getHardwareSummary(this);
-
-        String instructionName = codeTableManager.codeTableMain.getInstructionName(currentInstruction);
-        String dbg = "PC:0x" + Utils.toHex4(startinggPC) + "  " + hardwareState + "  0x" + Utils.toHex2(currentInstruction) + " " + instructionName;
-        addressString = "";
+        if (debugOutput) {
+            dbgHardwareState = Debug.getHardwareSummary(this);
+            dbgInstructionName = codeTableManager.codeTableMain.getInstructionName(currentInstruction);
+            dbgString = "PC:0x" + Utils.toHex4(startingPC) + "  " + dbgHardwareState + "  0x" + Utils.toHex2(currentInstruction) + " " + dbgInstructionName;
+            addressString = "";
+        }
 
         MicroOp[] microOps = codeTableManager.codeTableMain.getInstructionCode(currentInstruction);
 
@@ -471,13 +487,20 @@ public class CPU6502 {
             doMicroOp(microOp);
         }
 
-        dbg += "  " + addressString;
-        System.out.println(dbg);
+
+        if (debugOutput) {
+            dbgString += "  " + addressString;
+            System.out.println(dbgString);
+        }
+
+        //if (startinggPC==PC) haltEmulation = true;
     }
 
 
     // trigger interrupt irq
     public void irq() {
+        if (disableNmiAndIrq) return;
+
         if (((FL & FLAG_INTERRUPT_DISABLE) == 0)) {
             unsetFlag(FLAG_BREAK);
             pushWord(PC);
@@ -492,7 +515,8 @@ public class CPU6502 {
 
     // non-maskable interrupt
     public void nmi() {
-        unsetFlag(FLAG_BREAK);
+        if (disableNmiAndIrq) return;
+        //unsetFlag(FLAG_BREAK);
         pushWord(PC);
         pushByte(FL & 0xEF);
         // pushFlags();
