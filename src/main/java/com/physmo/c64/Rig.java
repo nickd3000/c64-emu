@@ -3,20 +3,12 @@ package com.physmo.c64;
 
 import com.physmo.minvio.BasicDisplay;
 
-// FCE2 hardware reset
-// E37B BASIC warm start entry point
-// E5A0 initialise the vic chip
-// FD50 Test RAM and find RAM end.
-// E716 Output a character to the screen
-// E3BF Initialize basic RAM locations.
-// E544 Clear the screen
-// FE25 - set top of memory (does something with a flag)
-// E453 initialise the basic vectors
+
 public class Rig {
 
-	static BasicDisplay basicDisplay = null;
+	BasicDisplay basicDisplay = null;
 
-	CPU6502 cpu = null;
+	CPU6502 cpu;
 	MEMC64 mem = null;
 	VIC vic = null;
 	CIA1 cia1 = null;
@@ -28,10 +20,6 @@ public class Rig {
 		C64Palette.init();
 
 		this.basicDisplay = basicDisplay;
-
-		//basicDisplay = new BasicDisplay((320+80) * 2, (240+80) * 2);
-//		basicDisplay = new BasicDisplayAwt((320+80) * 2, (240+80) * 2);
-//		basicDisplay.setTitle("C64 - Emulator");
 
 		cpu = new CPU6502();
 		vic = new VIC(cpu, basicDisplay, this);
@@ -49,7 +37,7 @@ public class Rig {
 	}
 
 	public void runForCycles(int runFor) {
-		cpu.debugOutput = true;
+		//cpu.debugOutput = true;
 		int displayLines = 500; //
 		int instructionsPerScanLine = 60;
 		int tickCount = 0;
@@ -62,7 +50,8 @@ public class Rig {
 
 			for (int ii = 0; ii < instructionsPerScanLine; ii++) {
 
-				if (tickCount % 100 == 0) {
+				if (tickCount % 5000 == 0) {
+					//basicDisplay.tickInput();
 					io.checkKeyboard(basicDisplay);
 				}
 
@@ -98,7 +87,7 @@ public class Rig {
 		}
 	}
 
-	public static void runToAddress(CPU6502 cpu, VIC vic, int address) {
+	public void runToAddress(CPU6502 cpu, VIC vic, int address) {
 		cpu.debugOutput = false;
 		int displayLines = 50; // 320; //
 		for (int i = 0; i < 5000000; i++) {
@@ -119,7 +108,7 @@ public class Rig {
 		}
 	}
 
-	public static void runToFlagSet(CPU6502 cpu, VIC vic, int flag) {
+	public void runToFlagSet(CPU6502 cpu, VIC vic, int flag) {
 		cpu.debugOutput = false;
 		int displayLines = 80; //
 		for (int i = 0; i < 5000000; i++) {
