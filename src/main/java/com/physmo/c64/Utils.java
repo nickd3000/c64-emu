@@ -1,8 +1,28 @@
 package com.physmo.c64;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class Utils {
+
+	public static int[] readFileToArray(String filePath) throws FileNotFoundException {
+		File imageFile = new File(filePath);
+		long fileSize = imageFile.length();
+		int[] fileData = new int[(int) fileSize];
+
+        try (FileInputStream in = new FileInputStream(filePath)) {
+            int c;
+            int count = 0;
+            while ((c = in.read()) != -1) {
+				fileData[count++] = c;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+		return fileData;
+    }
 
 	// TODO: change this to take an array reference instead of CPU class reference.
 	public static void ReadFileBytesToROMMemoryLocation(String fileName, CPU6502 cpu, int targetLocation) throws IOException {
