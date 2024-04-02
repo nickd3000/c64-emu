@@ -17,7 +17,11 @@ public class IO {
 
     // keymap_[SDL_SCANCODE_A] = std::make_pair(1,2);
 
-    int[] keyboard_matrix_ = new int[8];
+    int[] keyboard_matrix_ = new int[8]; // REMOVE
+    int[] portA = new int[8]; // Matrix Rows
+    int[] portB = new int[8]; // Matrix Cols
+    int joy1 = 0xff;
+    int joy2 = 0xff;
 
     public IO(CPU6502 cpu, Rig rig) {
         System.out.println("Initialising IO");
@@ -26,6 +30,8 @@ public class IO {
 
         for (int i = 0; i < 8; i++) {
             keyboard_matrix_[i] = 0xff;
+            portA[i] = 0xff;
+            portB[i] = 0xff;
         }
 
         // keymap_.put(1, new pair(1, 2));
@@ -114,7 +120,13 @@ public class IO {
         return keyboard_matrix_[col];
     }
 
-    ;
+    public int[] getPortA() {
+        return portA;
+    }
+
+    public int[] getPortB() {
+        return portB;
+    }
 
     public void handle_keydown(int k) {
         Integer[] pair = keymap_.get(k);
@@ -123,6 +135,8 @@ public class IO {
         int row = pair[0];
         int column = pair[1];
         keyboard_matrix_[column] &= ~(1 << row);
+        portB[column] &= ~(1 << row);
+        portA[row] &= ~(1 << column);
     }
 
     public void handle_keyup(int k) {
@@ -132,24 +146,34 @@ public class IO {
         int row = pair[0];
         int column = pair[1];
         keyboard_matrix_[column] |= 1 << row;
+        portB[column] |= 1 << row;
+        portA[row] |= 1 << column;
     }
 
     public void resetAllKeys() {
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++) {
             keyboard_matrix_[i] = 0xff;
+//            portA[i]=0xff;
+//            portB[i]=0xff;
+        }
     }
 
     public void checkKeyboard(BasicDisplay bd) {
 
         boolean control = bd.getKeyState()[KeyEvent.VK_CONTROL] > 0;
-        rig.cia1.pra_ |= 0x1F; // Set joystick bits.
+        //rig.cia1.pra_ |= 0x1F; // Set joystick bits.
+
+        joy2 = 0xff;
 
         for (int key : joyMap2.keySet()) {
             if (bd.getKeyState()[key] > 0) {
-                rig.cia1.pra_ &= (~(1 << joyMap2.get(key)));
-                return;
+                //System.out.println("joy " + key);
+                joy2 &= (~(1 << joyMap2.get(key)) & 0xff);
+                //return;
             }
         }
+        joy1 = joy2;
+        //System.out.println(""+Utils.toBinary2(joy2));
 
         int loadKey = KeyEvent.VK_L;
         if (isFirstPress(bd, loadKey) && control) {
@@ -162,7 +186,7 @@ public class IO {
         if (isFirstPress(bd, tapeKey) && control) {
             System.out.println("loading");
 
-            Loader.loadT64File("/Users/nick/dev/emulatorsupportfiles/c64/t64/"+getT64Name(), cpu);
+            Loader.loadT64File("/Users/nick/dev/emulatorsupportfiles/c64/t64/" + getT64Name(), cpu);
             return;
         }
 
@@ -170,6 +194,13 @@ public class IO {
         if (isFirstPress(bd, testKey) && control) {
             System.out.println("Running tests");
             cpu.resetAndTest();
+            return;
+        }
+
+        // Toggle debug output
+        if (isFirstPress(bd, KeyEvent.VK_D) && control) {
+            if (!cpu.debugOutput) cpu.debugOutput = true;
+            else cpu.debugOutput = false;
             return;
         }
 
@@ -181,6 +212,18 @@ public class IO {
             }
         }
 
+        // Remap ctrl+1 to F1
+        if (control) {
+            int one = (int) '1';
+
+            if (bd.getKeyState()[one] > 0 && bd.getKeyStatePrevious()[one] == 0) {
+                handle_keydown(112);
+            } else if (bd.getKeyState()[one] == 0 && bd.getKeyStatePrevious()[one] > 0) {
+                handle_keyup(112);
+            }
+        }
+
+
         int pressedCount = 0;
         for (int i = 0; i < 0xff; i++) {
             if (bd.getKeyState()[i] > 0)
@@ -190,6 +233,16 @@ public class IO {
             resetAllKeys();
 
         bd.tickInput();
+
+
+        // DEBUG
+//        String dbgA = "";
+//        String dbgB = "";
+//        for (int i=0;i<8;i++) {
+//            dbgA += Utils.toBinary2(portA[i])+"-";
+//            dbgB += Utils.toBinary2(portB[i])+"-";
+//        }
+//        System.out.println("PortA "+dbgA+":"+dbgB);
     }
 
     //int testKey = KeyEvent.VK_T;//112+11+1; // F1
@@ -202,21 +255,50 @@ public class IO {
     }
 
     public String getT64Name() {
+//        return "finderskeepers.t64"; // WORKING
         //return "bcbill.t64";
-        //return "centiped.t64"; // Runs with graphics glitches
-        //return "delta.t64"; // GFX glitches
-        //return "wizball.t64"; // BRK loop
-        //return "bcbill2.t64"; // Shows title
-        //return "arcadia6.t64"; // runs with GFX glitches
-        //return "bountybob.t64"; // shows loader then crashes
-        //return "finderskeepers.t64"; // bad file?
-        //return "uridium.t64"; // bad file?
-        //return "greenber.t64"; // garbled loader
-        //return "headoverheels.t64"; //
-        return "humanrace.t64"; // Loads into game graphics messed up
+//        return "centiped.t64"; // Runs fine
+//        return "delta.t64"; // GFX glitches (intro working better now) good intro
+//        return "wizball.t64"; // infinite loop BRK loop
+//        return "bcbill2.t64"; // Shows title then freezes
+//        return "arcadia6.t64"; // runs with GFX glitches
+//        return "bountybob.t64"; // shows loader then crashes
 
 
+//        return "greenber.t64"; // hacker loader nearly perfect -
+//        return "headoverheels.t64"; // Doesn't finish loading
+//        return "humanrace.t64"; // Loads into game graphics messed up
+//        return "kane.t64"; // loads but has errors
+//        return "kentilla.t64"; // doesnt finish loading
+//        return "OllieAndLisa.t64"; // crashes before loader
 
+//        return "Panther.t64"; // game display but cant move
+
+//        return "pitfall2.t64"; // bad instruction
+//        return "sanxion.t64"; // BRK
+//        return "spbound.t64"; // bad instruction
+//        return "stormbringer.t64"; // intro works but game does not load
+        return "zzzzz.t64"; // bad instruction
+//        return "pedro.t64"; // uses graphics mode 3
+//        return "Outrun.t64"; // bad instruction
+//        return "spindizy.t64"; // bad instruction
+//        return "zorro.t64"; // bad instruction
+//        return "MONTY.t64"; // bad instruction
+//        return "uridium.t64"; // bad instruction
+
+//  return "manicmin.t64"; // loads to glitching game
+//  return "rhood.t64"; // doesnt start
+
+//          return "BMXRACE2.T64"; // loads to game with graphics and collision errors
+//          return "brucelee.t64"; // crashes on load
+//          return "COSMICCR.T64"; // fails to load
+//          return "daley.t64"; // loads but glitches
+//          return "dandy.t64"; // fails to load
+//          return "eclipse.t64"; // glitchy hacker screen, cant get to game
+//          return "entombed.t64"; // loads to title
+
+
+//        return "spectipede.t64"; // doesnt start
     }
 
 }
