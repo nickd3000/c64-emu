@@ -85,6 +85,10 @@ public enum MicroOp {
     // STACK
     PHA, PHP, PLA, PLP,
 
+    /////////////////////////////////////////////////////
+    // UNDOCUMENTED INSTRUCTIONS
+    SAX, ANC, ASR,
+
 //    PREFIX_CB,
 //    PREFIX_ED,
 //    PREFIX_FD,
