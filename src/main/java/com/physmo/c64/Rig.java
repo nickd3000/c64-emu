@@ -39,24 +39,20 @@ public class Rig {
 	public void runForCycles(int runFor) {
 		//cpu.debugOutput = true;
 		int displayLines = 500; //
-		int instructionsPerScanLine = 60;
+		int instructionsPerScanLine = 160;
 		int tickCount = 0;
 
 
 		for (int i = 0; i < runFor + displayLines; i++) {
-//			if (i > runFor - displayLines)
-//				cpu.debugOutput = true;
-
 
 			for (int ii = 0; ii < instructionsPerScanLine; ii++) {
 
 				if (tickCount % 5000 == 0) {
-					//basicDisplay.tickInput();
 					io.checkKeyboard(basicDisplay);
 				}
 
 				// Don't tick other components if unit test is active.
-				if (cpu.unitTest == false) {
+				if (!cpu.unitTest) {
 					cia1.tick();
 					cia2.tick();
 					cpu.tick2();
@@ -68,22 +64,12 @@ public class Rig {
 				tickCount++;
 			}
 
-			vic.VICStub(cpu, basicDisplay);
-
-			if (tickCount % 100000 == 0) {
-				// System.out.println("Tick count: "+tickCount);
-			}
-
 			if (cpu.firstUnimplimentedInstructionIndex != -1) {
 				System.out.println("### First unimplimented instruction occured at call number: "
 						+ cpu.firstUnimplimentedInstructionIndex);
 				break;
 			}
 
-			// if (cpu.debugOutput) {
-			// displayLines-=60;
-			// if (displayLines<1) break;
-			// }
 		}
 	}
 
