@@ -189,14 +189,6 @@ public class MEMC64 {
         enableCharacter = ((val & 4) == 0) && ((val & 3) != 0);
         enableIO = ((val & 4) == 4) && ((val & 3) != 0);
 
-
-        // Force all banks to point to ram for testing
-//        if (cpu.unitTest == true) {
-//            enableKernal = false;
-//            enableBasic = false;
-//            enableCharacter = false;
-//            enableIO = false;
-//        }
     }
 
 
