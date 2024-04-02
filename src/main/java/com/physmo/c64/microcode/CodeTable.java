@@ -20,6 +20,7 @@ public class CodeTable {
 
     Map<Integer, String> names = new HashMap<>();
     Map<String, Integer> opCodeLookup = new HashMap<>();
+    int[] cycles = new int[0xff+1];
     String name;
 
     public CodeTable(String name) {
@@ -29,10 +30,11 @@ public class CodeTable {
         }
     }
 
-    public void define(int opCode, String name, MicroOp... microcodes) {
+    public void define(int opCode, String name, int c, MicroOp... microcodes) {
         opsList[opCode] = microcodes;
         names.put(opCode, name);
         opCodeLookup.put(name, opCode);
+        cycles[opCode] = c;
     }
 
     public MicroOp[] getInstructionCode(int instruction) {
@@ -53,4 +55,7 @@ public class CodeTable {
         return opCodeLookup.get(name);
     }
 
+    public int getInstructionCycles(int instruction) {
+        return cycles[instruction];
+    }
 }

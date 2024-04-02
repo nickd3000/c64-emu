@@ -25,6 +25,7 @@ public class CPU6502 {
     public String stateString = "";
     public boolean simulateKeypress = false;
     public boolean printInstructions = false;
+    public int cycles = 0;
     CodeTableManager codeTableManager = new CodeTableManager();
     MEMC64 mem = null;
     int A; // Accumulator register
@@ -35,12 +36,11 @@ public class CPU6502 {
     int FL; // Flags
     int SB = 0x0100; // Stack base
     boolean unitTest = false;
-    int cycles = 0;
     int tickCount = 0;
     int addressBus = 0;
     int dataBus = 0;
     String addressString = "";
-    boolean disableNmiAndIrq = false;
+    boolean disableNmiAndIrq = false; // Must disable these for tests
     boolean haltEmulation = false;
     String dbgHardwareState;
     String dbgInstructionName;
@@ -55,9 +55,8 @@ public class CPU6502 {
         int prgLoc = 0;
 
         try {
-            // NOTE: the 65C02 is a different chip so we don't use that test file.
+            // NOTE: the 65C02 is a different chip, so we don't use that test file.
             Utils.ReadFileBytesToRAMMemoryLocation(testPath + "6502_functional_test.bin", this, 0x0000);
-            //Utils.ReadFileBytesToRAMMemoryLocation(testPath+"6502_functional_test_400.bin", this, 0x0400);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -116,6 +115,7 @@ public class CPU6502 {
     }
 
     private String buildDebugAddressString() {
+        if (!debugOutput) return "";
         return "&" + Utils.toHex4(addressBus) + ":0x" + Utils.toHex2(mem.peek(addressBus)) + "  PLA:" + Utils.toHex2(mem.RAM[1]);
     }
 
@@ -218,6 +218,13 @@ public class CPU6502 {
                 break;
             case AND:
                 setA(A & dataBus);
+                break;
+            case ANC: // UNDOCUMENTED
+                setA(A & dataBus);
+
+                setFlagConditional(FLAG_NEGATIVE, ((A & 0b10000000) > 0));
+                setFlagConditional(FLAG_CARRY, ((A & 0b10000000) > 0));
+
                 break;
             case ORA:
                 setA(A | dataBus);
@@ -450,6 +457,18 @@ public class CPU6502 {
                 setFlagConditional(FLAG_ZERO, wrk == 0);
                 dataBus = wrk;
                 break;
+            case ASR:
+                wrk = (dataBus & A);
+
+                setFlagConditional(FLAG_ZERO, wrk == 0);
+                setFlagConditional(FLAG_CARRY, (wrk & 1) != 0);
+
+                wrk = dataBus >> 1;
+
+                unsetFlag(FLAG_NEGATIVE);
+
+                dataBus = wrk;
+                break;
             case ADC:
                 setA(addWithCarry(dataBus, A));
                 break;
@@ -457,6 +476,10 @@ public class CPU6502 {
                 wrk = dataBus;
                 wrk = subtractWithCarry(A, wrk & 0xff);
                 setA(wrk & 0xff);
+                break;
+
+            case SAX: // UNDOCUMENTED
+                dataBus = A & X;
                 break;
 
             default:
@@ -467,12 +490,15 @@ public class CPU6502 {
     public void tick2() {
         if (haltEmulation) return;
 
-        cycles += 4;
+
         tickCount++;
 
 
         int startingPC = PC;
         int currentInstruction = mem.peek(PC++);
+
+        int instructionCycles = codeTableManager.codeTableMain.getInstructionCycles(currentInstruction);
+        cycles += instructionCycles;
 
         if (debugOutput) {
             dbgHardwareState = Debug.getHardwareSummary(this);
@@ -548,10 +574,11 @@ public class CPU6502 {
 
 
     // Compare values and set flags as result.
+
     public void compare(int v1, int v2) {
         int cmp = v1 - v2;
 
-        setFlagConditional(FLAG_ZERO, cmp == 0);
+        setFlagConditional(FLAG_ZERO, (cmp & 0xff) == 0);
         setFlagConditional(FLAG_CARRY, v1 >= v2);
         setFlagConditional(FLAG_NEGATIVE, (cmp & 0x80) > 0);
     }
