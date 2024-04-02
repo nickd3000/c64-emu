@@ -1,5 +1,6 @@
 package com.physmo.c64;
 
+import javax.sound.midi.Soundbank;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -80,7 +81,8 @@ public class Loader {
 		System.out.println("tapeContainerName:"+tapeContainerName);
 		System.out.println("=============================================");
 		System.out.println();
-		for (int i=0;i<usedEntries;i++) {
+
+		for (int i=0;i<maxEntries;i++) {
 			readT64DirectoryEntry(data, 0x40+(i*32), cpu);
 		}
 
@@ -98,16 +100,31 @@ public class Loader {
 		}
 		int length = endAddress-startAddress;
 
-		System.out.println("c64SfileType:"+c64SfileType);
-		System.out.println("fileType:"+fileType);
+		if (c64SfileType==0) {
+			//System.out.println("c64SfileType is 0, skipping");
+			return;
+		}
+
+		System.out.println("c64SfileType:"+Utils.toHex2(c64SfileType));
+		System.out.println("fileType:"+Utils.toHex2(fileType));
 		System.out.println("startAddress:"+Utils.toHex4(startAddress));
 		System.out.println("endAddress:"+Utils.toHex4(endAddress));
-		System.out.println("fileOffset:"+fileOffset);
+		System.out.println("fileOffset:"+Utils.toHex4(fileOffset));
 		System.out.println("directoryEntryName:"+directoryEntryName);
 
+		if (length+fileOffset>data.length) {
+			System.out.println("Warning: length is bigger than data");
+			length = data.length - fileOffset;
+		}
+		if (endAddress==0xC3C6) {
+			System.out.println("Warning: End address is C3C6 - probably faulty CONV64 based file.");
+			length = data.length - fileOffset;
+		}
 
 		for (int i=0;i<length;i++) {
-			cpu.mem.RAM[startAddress+i]=data[fileOffset+i];
+			//if (fileOffset+i<data.length) { // why should we have to check this?
+				cpu.mem.RAM[startAddress + i] = data[fileOffset + i];
+			//}
 		}
 	}
 }
