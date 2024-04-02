@@ -217,6 +217,12 @@ buffer_delete(buff);
 	public static String toHex4(int v) {	
 		return String.format("%04X", v);
 	}
+	public static String toBinary(int v) {
+		return "0b" + Integer.toBinaryString(v);
+	}
+	public static String toBinary2(int v) {
+		return Integer.toBinaryString(v);
+	}
 	
 	// Messy function to add spaces to a string to bring it up to a certain length.
 	public static String padToLength(String str, int length) {
@@ -248,6 +254,25 @@ buffer_delete(buff);
 			cpu.mem.RAM[ptr++] = i;
 		}
 		cpu.PC = 0x100;
+	}
+
+	// TODO: replace shifts here with constants for each bit.
+	public int setBit(int val, int bit) {
+		return val | (1 << bit);
+	}
+
+	public int resetBit(int val, int bit) {
+		return val & ~(1 << bit);
+	}
+
+	public boolean testBit(int val, int bit) {
+
+		if ((val & (1 << bit)) == 0) {
+			return false;
+		} else {
+			return true;
+		}
+
 	}
 }
 
