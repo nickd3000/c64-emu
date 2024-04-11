@@ -29,6 +29,8 @@ public class CIA1 {
     int timer_b_input_mode_;
     int timer_a_counter_;
     int timer_b_counter_;
+    int timerAControl;
+    int timerBControl;
 
     CPU6502 cpu = null;
     Rig rig = null;
@@ -107,6 +109,7 @@ public class CIA1 {
 
     public void write_register(int r, int v) {
         v = v & 0xff;
+        r = r & 0xf; // The CIA 1 register are mirrored each 16 Bytes
 
         // System.out.println("CIA1 write "+r+", "+v);
         switch (r) {
@@ -179,7 +182,8 @@ public class CIA1 {
                 break;
             /* control timer a */
             case 0xe:
-                timer_a_enabled_ = ((v & (1 << 0)) != 0);
+                timerAControl = v;
+                timer_a_enabled_ = ((v & 1) != 0);
                 timer_a_input_mode_ = (v & (1 << 5)) >> 5;
                 /* load latch requested */
                 if ((v & (1 << 4)) != 0)
@@ -187,6 +191,7 @@ public class CIA1 {
                 break;
             /* control timer b */
             case 0xf:
+                timerBControl = v;
                 timer_b_enabled_ = ((v & 0x1) != 0);
                 timer_b_input_mode_ = (v & (1 << 5)) | (v & (1 << 6)) >> 5;
                 /* load latch requested */
@@ -216,6 +221,8 @@ public class CIA1 {
     public int read_register(int r) {
         int retval = 0;
 
+        r = r & 0xf; // The CIA 1 register are mirrored each 16 Bytes
+
         switch (r) {
             /* data port a (PRA), keyboard matrix cols and joystick #2 */
             case 0x0:
@@ -230,20 +237,18 @@ public class CIA1 {
 
                 //retval = mangle(~pra_, rig.io.getPortB(), rig.io.joy2);
 
-                if (pra_ == 0xff)
+                if (pra_ == 0xff) {
                     retval = rig.io.joy2;
-                else if (pra_ > 0) {
+                    System.out.println("joy2");
+                } else if (pra_ > 0) {
 
                     int col = 0;
                     int v = (~pra_) & 0xff;
-
+                    System.out.println("KB mask: " + Utils.toBinary(v));
                     col = getBinaryIndex(v);
 
                     retval = rig.io.keyboard_matrix_row(col);
 
-//                    if (retval != 255) {
-//                        System.out.println("Cia keyb col:" + col + "  val:" + retval);
-//                    }
 
                 }
                 break;
@@ -273,18 +278,23 @@ public class CIA1 {
                 break;
             /* RTC 1/10s */
             case 0x8:
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* RTC seconds */
             case 0x9:
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* RTC minutes */
             case 0xa:
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* RTC hours */
             case 0xb:
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* shift serial */
             case 0xc:
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* interrupt control and status */
             case 0xd:
@@ -295,12 +305,20 @@ public class CIA1 {
                     if (timer_b_irq_triggered_)
                         retval |= (1 << 1);
                 }
+
+                // Do we need to reset these?
+                timer_a_irq_triggered_=false;
+                timer_b_irq_triggered_=false;
                 break;
             /* control timer a */
             case 0xe:
+                retval = timerAControl;
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
             /* control timer b */
             case 0xf:
+                retval = timerBControl;
+                System.out.println("Attempted read of CIA1 register:" + Utils.toHex2(r));
                 break;
         }
         return retval;

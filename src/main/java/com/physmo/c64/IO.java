@@ -255,50 +255,49 @@ public class IO {
     }
 
     public String getT64Name() {
-//        return "finderskeepers.t64"; // WORKING
-        //return "bcbill.t64";
-//        return "centiped.t64"; // Runs fine
-//        return "delta.t64"; // GFX glitches (intro working better now) good intro
-//        return "wizball.t64"; // infinite loop BRK loop
-//        return "bcbill2.t64"; // Shows title then freezes
-//        return "arcadia6.t64"; // runs with GFX glitches
-//        return "bountybob.t64"; // shows loader then crashes
 
+//         return "finderskeepers.t64"; // WORKING
+//         return "bcbill.t64"; // mode 3
+//         return "centiped.t64"; // Runs fine
+//         return "delta.t64"; // GFX glitches (intro working better now) good intro
+//         return "wizball.t64"; // infinite loop BRK loop
+//         return "arcadia6.t64"; // runs with GFX glitches - mode 3
+//         return "bountybob.t64"; // gets to title screen
+//         return "greenber.t64"; // hacker loader nearly perfect -
+//         return "headoverheels.t64"; // Doesn't finish loading
+         return "humanrace.t64"; // Loads into game graphics messed up
+//         return "kane.t64"; // loads but sprites messed up - DUAL mode game screen?
+//         return "kentilla.t64"; // doesnt finish loading
+//         return "OllieAndLisa.t64"; // crashes before loader
+//         return "Panther.t64"; // game display but cant move
+//         return "pitfall2.t64"; // bad instruction
+//         return "sanxion.t64"; // BRK
+//         return "spbound.t64"; // bad instruction
+//         return "stormbringer.t64"; // intro works but game does not load
+//         return "zzzzz.t64"; // bad instruction - mode 2
+//         return "dandy.t64"; // fails to load - GFX Mode 2
+//         return "pedro.t64"; // uses graphics mode 3
+//         return "Outrun.t64"; // bad instruction
+//         return "spindizy.t64"; // bad instruction
+//         return "zorro.t64"; // bad instruction
+//         return "MONTY.t64"; // bad instruction
+//         return "uridium.t64"; // bad instruction
+//         return "manicmin.t64"; // loads to glitching game
+//         return "rhood.t64"; // doesnt start
+//         return "BMXRACE2.T64"; // loads to game with graphics and collision errors
+//         return "brucelee.t64"; // crashes on load
+//         return "COSMICCR.T64"; // working - GFX mode 3
+//         return "daley.t64"; // loads - sprite glitcheds - GFX mode 3
+//         return "eclipse.t64"; // glitchy hacker screen, cant get to game
+//         return "entombed.t64"; // loads to title
+//         return "spectipede.t64"; // doesnt start
+//         return "action.t64"; // Working - Good scrolling test
+//         return "headoverheels_b.t64"; // freezes on loading
+//         return "hollywoodorbust.t64"; // loads and runs with glitching GFX
+//         return "kobayashinaru.t64"; // freezes on loading
+//         return "polepos.t64"; // Loads game and runs with some glitching
+//         return "spyh.t64"; // freezes on loading
 
-//        return "greenber.t64"; // hacker loader nearly perfect -
-//        return "headoverheels.t64"; // Doesn't finish loading
-//        return "humanrace.t64"; // Loads into game graphics messed up
-//        return "kane.t64"; // loads but has errors
-//        return "kentilla.t64"; // doesnt finish loading
-//        return "OllieAndLisa.t64"; // crashes before loader
-
-//        return "Panther.t64"; // game display but cant move
-
-//        return "pitfall2.t64"; // bad instruction
-//        return "sanxion.t64"; // BRK
-//        return "spbound.t64"; // bad instruction
-//        return "stormbringer.t64"; // intro works but game does not load
-        return "zzzzz.t64"; // bad instruction
-//        return "pedro.t64"; // uses graphics mode 3
-//        return "Outrun.t64"; // bad instruction
-//        return "spindizy.t64"; // bad instruction
-//        return "zorro.t64"; // bad instruction
-//        return "MONTY.t64"; // bad instruction
-//        return "uridium.t64"; // bad instruction
-
-//  return "manicmin.t64"; // loads to glitching game
-//  return "rhood.t64"; // doesnt start
-
-//          return "BMXRACE2.T64"; // loads to game with graphics and collision errors
-//          return "brucelee.t64"; // crashes on load
-//          return "COSMICCR.T64"; // fails to load
-//          return "daley.t64"; // loads but glitches
-//          return "dandy.t64"; // fails to load
-//          return "eclipse.t64"; // glitchy hacker screen, cant get to game
-//          return "entombed.t64"; // loads to title
-
-
-//        return "spectipede.t64"; // doesnt start
     }
 
 }

@@ -45,6 +45,7 @@ public class CPU6502 {
     String dbgHardwareState;
     String dbgInstructionName;
     String dbgString;
+    boolean jam=false;
 
     public void attachHardware(MEMC64 mem) {
         this.mem = mem;
@@ -85,7 +86,7 @@ public class CPU6502 {
 
         // https://blog.fynydd.com/crash-course-on-emulating-the-mos-6510-cpu/
         // According to this site, bits 0 and 1 should be initialised to 0xff and 0x07
-        mem.RAM[0] = 0x2F; // set CPU control lines (for bank switching)
+        mem.RAM[0] = 0xEF; //0x2F; // set CPU control lines (for bank switching)
         mem.RAM[1] = 0x07; // 07 set CPU control lines (for bank switching)
 
         // Another site says 0x2f and 0x37
@@ -128,18 +129,24 @@ public class CPU6502 {
             case BRK:
 
                 //
+                //setFlag(FLAG_BREAK);
+                //setFlag(FLAG_UNUSED);
+
+                pushWord((PC + 1)&0xFFFF); // PC+1
+                pushByte(FL|FLAG_BREAK|FLAG_UNUSED);// | 0x10);//FLAG_ZERO);
+
+                //setFlag(FLAG_INTERRUPT_DISABLE);
                 setFlag(FLAG_BREAK);
-                setFlag(FLAG_UNUSED);
-
-                pushWord(PC + 1); // PC+1
-                pushByte(FL | 0x10);//FLAG_ZERO);
-
-                setFlag(FLAG_INTERRUPT_DISABLE);
 
                 PC = getWord(0xfffe);
+                //unsetFlag(FLAG_BREAK);
 
                 break;
             case NOP:
+                break;
+            case JAM:
+                jam=true;
+                System.out.println("JAM !!!!!!!!!!!");
                 break;
             /*
                 Addressing modes
@@ -489,10 +496,11 @@ public class CPU6502 {
 
     public void tick2() {
         if (haltEmulation) return;
-
+        if (jam) return;
 
         tickCount++;
 
+        //if (PC==0x083B) haltEmulation=true;
 
         int startingPC = PC;
         int currentInstruction = mem.peek(PC++);
@@ -536,6 +544,7 @@ public class CPU6502 {
             // setFlagInterruptDisable();
             setFlag(FLAG_INTERRUPT_DISABLE);
             cycles += 5;
+            System.out.println("IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ ");
         }
     }
 
@@ -549,6 +558,8 @@ public class CPU6502 {
         PC = getWord(0xfffa);
         // setFlag(FLAG_INTERRUPT_DISABLE);
         cycles += 5;
+
+        System.out.println("NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI NMI ");
     }
 
 

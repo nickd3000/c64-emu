@@ -317,6 +317,21 @@ public class CodeTableManager {
 
         codeTableMain.define(0x4B, "ASR #$nn", 2, MicroOp.GET_NEXT_BYTE, MicroOp.ASR, MicroOp.LDA );
         codeTableMain.define(0x6B, "ARR #$nn", 2, MicroOp.GET_NEXT_BYTE, MicroOp.AND, MicroOp.FETCH_A, MicroOp.LSR, MicroOp.LDA ); // TODO: Some extra flag operations
+
+        codeTableMain.define(0x02, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x12, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x22, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x32, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x42, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x52, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x62, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x72, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0x92, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0xB2, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0xD2, "JAM", 0, MicroOp.JAM);
+        codeTableMain.define(0xF2, "JAM", 0, MicroOp.JAM);
+
+
     }
 
 

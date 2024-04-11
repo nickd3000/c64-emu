@@ -84,7 +84,7 @@ public class Rig {
 			}
 
 			cpu.tick2();
-			vic.VICStub(cpu, basicDisplay);
+
 
 			if (cpu.debugOutput) {
 				displayLines--;
@@ -105,7 +105,7 @@ public class Rig {
 			}
 
 			cpu.tick2();
-			vic.VICStub(cpu, basicDisplay);
+
 
 			if (cpu.debugOutput) {
 				displayLines--;

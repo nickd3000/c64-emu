@@ -115,7 +115,7 @@ public class VIC {
         char_mem_ = 0xd000; // Memory::kBaseAddrChars;
         bitmap_mem_ = 0x0000; // Memory::kBaseAddrBitmap;
         /* bit 0 is unused */
-        mem_pointers_ = (1 << 0);
+        mem_pointers_ = 1;
         /* current graphic mode */
         graphic_mode_ = kCharMode;
     }
@@ -177,11 +177,16 @@ public class VIC {
             refreshColorCache();
             calculateGraphicsMode();
 
+
             // Clear collision
             cpu.mem.RAM[ADDR_SPRITE_SPRITE_COLLISION] = 0;
             cpu.mem.RAM[ADDR_SPRITE_BACKGROUND_COLLISION] = 0;
 
             int rstr = raster_counter();
+
+            if (rstr==100) System.out.println("bitmap mem: "+Utils.toHex4( bitmap_mem_));
+
+
             /* check raster IRQs */
             if (raster_irq_enabled() && rstr == raster_irq_) {
                 /* set interrupt origin (raster) */
@@ -207,8 +212,11 @@ public class VIC {
 
                     case kBitmapMode:
                     case kMCBitmapMode:
+
                         //draw_raster_bitmap_mode();
                         //System.out.println("Bitmap mode");
+
+                        renderBitmapScanline();
 
                         break;
                     default:
@@ -238,7 +246,6 @@ public class VIC {
         }
 
 
-
         return true;
     }
 
@@ -257,19 +264,11 @@ public class VIC {
         bd.drawFilledRect(0, rstr * 2, kVisibleScreenWidth * 2, 2);
     }
 
-    public void VICStub(CPU6502 cpu, BasicDisplay bd) {
 
-        // Raster line
-        // int val = cpu.io[0xD012];
-        // val = (val + 1) & 0xff;
-        // cpu.io[ADDR_RASTER_D012] = val;
-        // ram[0xd012] = val;
-
-        // renderScanline();
-
-        // if (y==0) cpu.irq();
-    }
-
+    /*
+        VIC should always read memory from here
+        It takes into account the CIA2 memory pointer and handles the special character case.
+     */
     public int vic_read_byte(int addr) {
         int v;
 
@@ -280,6 +279,21 @@ public class VIC {
         else
             v = cpu.mem.RAM[vic_addr];
         return v;
+    }
+
+    public int vic_read_byte_no_rom(int addr) {
+        int v;
+
+        int vic_addr = rig.cia2.vic_base_address() + (addr & 0x3fff);
+
+        v = cpu.mem.RAM[vic_addr];
+
+        return v;
+    }
+
+    public int getBitmapData(int col, int row, int offset) {
+        return vic_read_byte_no_rom(bitmap_mem_ + (((row * 40) + col) * 8) + offset) & 0xff;
+        //return vic_read_byte(screen_mem_ + (((row * 20) + col) * 8) + offset) & 0xff;
     }
 
     // New combined mode version.
@@ -296,7 +310,7 @@ public class VIC {
         ADDR_CHARACTER_ROM = char_mem_;
 
         int scrollY = 0;//cr1_ & 0b00000111;
-        int scrollX = cr2_ & 0b00000111;
+        int scrollX = 0;//cr2_ & 0b00000111;
 
         if (!((rstr >= kGFirstLine) && (rstr < kGLastLine))) return;
 
@@ -312,6 +326,41 @@ public class VIC {
         }
 
     }
+
+
+    public void renderBitmapScanline() {
+
+        int rstr = raster_counter();
+        int y = rstr - kFirstVisibleLine;
+        int line = rstr - kGFirstLine;
+        scale = 2;
+
+        //ADDR_SCREEN_RAM = bitmap_mem_; // looks good
+        //ADDR_CHARACTER_ROM = char_mem_;
+
+        int scrollY = 0;//cr1_ & 0b00000111;
+        int scrollX = 0;//cr2_ & 0b00000111;
+
+        if (!((rstr >= kGFirstLine) && (rstr < kGLastLine))) return;
+
+        int mx = 0;//(bd.getMouseY()*8);
+
+        for (int column = 0; column < 40; column++) {
+
+            int row = line / 8;
+            int scy = line % 8;
+            int charScanlineByte = getBitmapData(column, row, scy+mx); // INCORRECT
+            int scolor = vic_read_byte(screen_mem_ + (row * 40) + column); // CORRECT
+            int rcolor = cpu.mem.COLOR_RAM[ADDR_COLOR_RAM + (row * 40) + column];
+
+
+            renderCharacterBitmap((column * 8) + scrollX, y + scrollY, rcolor, scolor, charScanlineByte, scale);
+        }
+
+    }
+
+
+
 
     // Some colors should not change much line to line, so we cache them to avid repeatedly retrieving them.
     public void refreshColorCache() {
@@ -361,108 +410,44 @@ public class VIC {
 
     }
 
-    public void renderScanlineCharMono() {
-        int x = 0;
-        int rstr = raster_counter();
-        int y = rstr - kFirstVisibleLine;
-        int line = rstr - kGFirstLine;
-        scale = 2;
+    public void renderCharacterBitmap(int drawX, int drawY, int rcolor, int scolor, int charScanlineByte, int scale) {
 
-        ADDR_SCREEN_RAM = screen_mem_; // looks good
-        ADDR_CHARACTER_ROM = char_mem_;
+        Color c2;
 
-        if (!((rstr >= kGFirstLine) &&
-                (rstr < kGLastLine))) return;
+        Color cf = C64Palette.palette[(scolor >> 4) & 0xf];
+        Color cb = C64Palette.palette[scolor & 0xf];
+        Color cr = C64Palette.palette[rcolor & 0xf]; // should we mask with 0b00000111?
 
-        for (x = 0; x < 320; x++) {
+        // Single color mode. - problems
+        if (graphic_mode_ == 2) {
 
-            int charOffset = (x >> 3) + (((line) >> 3) * 40);
-            int charIndex = vic_read_byte(ADDR_SCREEN_RAM + charOffset);
+            for (int p = 0; p < 8; p++) {
+                // Test each pixel in character scanline
+                if ((charScanlineByte & (0b10000000 >> p)) > 0) bd.setDrawColor(cf);
+                else bd.setDrawColor(cb);
 
-            int charColourId = (cpu.mem.COLOR_RAM[ADDR_COLOR_RAM + charOffset]);// & 0x07); // IO
-
-            int scx = x % 8; // sub char pixel
-            int scy = line % 8;
-            int charScanlineByte = vic_read_byte(ADDR_CHARACTER_ROM + (charIndex * 8) + scy) & 0xff;
-
-            Color c = C64Palette.palette[read_register(0x21) & 0x0F];
-
-            if ((charScanlineByte & (128 >> scx)) > 0)
-                c = C64Palette.palette[charColourId & 0x0F];
-
-            bd.setDrawColor(c);
-            bd.drawFilledRect((x + kGFirstCol) * scale, (y) * scale, scale, scale);
-
-        }
-
-//		if (y == 0 || y == 100)
-//			bd.refresh();
-    }
-
-    public void renderScanlineCharCol() {
-
-        int rstr = raster_counter();
-        int y = rstr - kFirstVisibleLine;
-        int line = rstr - kGFirstLine;
-
-        scale = 2;
-
-        ADDR_SCREEN_RAM = screen_mem_; // looks good
-        ADDR_CHARACTER_ROM = char_mem_;
-
-        if (!((rstr >= kGFirstLine) &&
-                (rstr < kGLastLine))) return;
-
-        for (int x = 0; x < 320; x += 2) {
-
-            int charOffset = (x >> 3) + ((y >> 3) * 40);
-            int charIndex = vic_read_byte(ADDR_SCREEN_RAM + charOffset);
-
-            int charColourId = (cpu.mem.COLOR_RAM[ADDR_COLOR_RAM + charOffset]);// & 0x07); // IO
-
-            int scx = x % 8; // sub char pixel
-            int scy = line % 8;
-            int charScanlineByte = vic_read_byte(ADDR_CHARACTER_ROM + (charIndex * 8) + scy) & 0xff;
-
-            Color c = C64Palette.palette[read_register(0x21) & 0x0F];
-
-            int combinedPixels = 0;
-            if ((charScanlineByte & (128 >> scx)) > 0)
-                combinedPixels += 2;
-            if ((charScanlineByte & (64 >> scx)) > 0)
-                combinedPixels += 1;
-
-            // Resolve colour.
-            switch (combinedPixels) {
-                case 0:
-                    c = C64Palette.palette[bgcolor_[0] & 0x0F];
-                    break;
-                case 1:
-                    c = C64Palette.palette[bgcolor_[1] & 0x0F];
-                    break;
-                case 2:
-                    c = C64Palette.palette[bgcolor_[2] & 0x0F];
-                    break;
-                case 3:
-                    //c = C64Palette.palette[combinedPixels];
-                    //c = C64Palette.palette[(charColourId>>6) & 0x0F];
-                    //if ((charColourId & (1 << 3)) > 0)
-                    if ((charColourId & 0b1000) > 0)
-                        c = C64Palette.palette[(charColourId) & 0x07];
-                    else
-                        c = C64Palette.palette[(charColourId) & 0x0F];
-                    break;
-            }
-
-            if ((charColourId & 0b10000) == 0) {
-                bd.setDrawColor(c);
-                bd.drawFilledRect((x + kGFirstCol) * scale, y * scale, scale, scale);
-                bd.drawFilledRect((x + kGFirstCol + 1) * scale, y * scale, scale, scale);
+                bd.drawFilledRect((drawX + p + kGFirstCol) * scale, drawY * scale, scale, scale);
             }
         }
 
-//		if (y == 0 || y == 100)
-//			bd.refresh();
+        // Multicolor - seems to work ok.
+        if (graphic_mode_ == 3) {
+
+            for (int p = 0; p < 4; p++) {
+                int pair = (charScanlineByte >> ((3 - p) * 2)) & 0b00000011;
+                // Test each pixel in character scanline
+                if (pair == 0) bd.setDrawColor(c_bg1);
+                if (pair == 1) bd.setDrawColor(cf);
+                if (pair == 2) bd.setDrawColor(cb);
+                if (pair == 3) bd.setDrawColor(cr);
+
+
+                bd.drawFilledRect((drawX + (p * 2) + kGFirstCol) * scale, drawY * scale, scale, scale);
+                bd.drawFilledRect((drawX + (p * 2) + kGFirstCol + 1) * scale, drawY * scale, scale, scale);
+            }
+
+        }
+
     }
 
     int sprite_x(int n) {
@@ -603,7 +588,7 @@ public class VIC {
                 break;
             /* control register 2 */
             case 0x16:
-                retval = cr2_;
+                retval = cr2_ | 0b11000000;
                 break;
             /* sprite double height */
             case 0x17:
@@ -611,7 +596,7 @@ public class VIC {
                 break;
             /* memory pointers */
             case 0x18:
-                retval = mem_pointers_;
+                retval = mem_pointers_|1;
                 break;
             /**
              * interrupt status register IRQ| - | - | - | ILP|IMMC|IMBC|IRST|
@@ -626,7 +611,7 @@ public class VIC {
              * interrupt enable register - | - | - | - | ELP|EMMC|EMBC|ERST|
              */
             case 0x1a:
-                retval = (0xf0 | irq_enabled_);
+                retval = (0xf0 | irq_enabled_) | 0x70;
                 break;
             /* sprite priority register */
             case 0x1b:
@@ -650,19 +635,19 @@ public class VIC {
 
             /* border color */
             case 0x20:
-                retval = border_color_;
+                retval = border_color_|0xF0;
                 break;
             /* background colors */
             case 0x21:
             case 0x22:
             case 0x23:
             case 0x24:
-                retval = bgcolor_[r - 0x21];
+                retval = bgcolor_[r - 0x21]|0xF0;
                 break;
             /* sprite colors */
             case 0x25:
             case 0x26:
-                retval = sprite_shared_colors_[r - 0x25];
+                retval = sprite_shared_colors_[r - 0x25]|0xF0;
                 break;
             case 0x27:
             case 0x28:
@@ -672,7 +657,7 @@ public class VIC {
             case 0x2c:
             case 0x2d:
             case 0x2e:
-                retval = sprite_colors_[r - 0x27];
+                retval = sprite_colors_[r - 0x27]|0xF0;
                 break;
             /* unused */
             case 0x2f:
@@ -707,8 +692,9 @@ public class VIC {
             case 0x4:
             case 0x6:
             case 0x8:
-            case 0xc:
-            case 0xe:
+            case 0xA:
+            case 0xC:
+            case 0xE:
                 mx_[r >> 1] = v;
                 break;
             /* store Y coord of sprite n */
@@ -735,7 +721,7 @@ public class VIC {
                 break;
             /* raster irq */
             case 0x12:
-                raster_irq_ = v;// | (raster_irq_ & (1 << 8));
+                raster_irq_ = v | (raster_irq_ & (1 << 8));
                 break;
             /* sprite enable register */
             case 0x15:
@@ -759,7 +745,8 @@ public class VIC {
                 /* bit ----x--- */
                 bitmap_mem_ = (v & 0x8) << 10;
                 /* save reg value (last bit always set) */
-                mem_pointers_ = v | (1 << 0);
+                mem_pointers_ = v | 1;
+
                 break;
             /* interrupt request register */
             case 0x19:
@@ -830,6 +817,9 @@ public class VIC {
                 break;
         }
     }
+
+
+
 
     public boolean testBit(int v, int b) {
         if ((v & (1 << b)) != 0)

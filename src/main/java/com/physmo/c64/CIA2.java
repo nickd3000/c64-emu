@@ -16,6 +16,7 @@ public class CIA2 {
 	int timer_a_latch_ = 0;
 	int timer_b_latch_ = 0;
 	int pra_, prb_;
+	int ddra,ddrb;
 	boolean timer_a_enabled_;
 	boolean timer_b_enabled_;
 	boolean timer_a_irq_enabled_;
@@ -28,6 +29,8 @@ public class CIA2 {
 	int timer_b_input_mode_;
 	int timer_a_counter_;
 	int timer_b_counter_;
+	int timerAControl;
+	int timerBControl;
 
 	CPU6502 cpu = null;
 	Rig rig = null;
@@ -39,6 +42,7 @@ public class CIA2 {
 		timer_a_input_mode_ = timer_b_input_mode_ = kModeProcessor;
 		timer_a_run_mode_ = timer_b_run_mode_ = kModeRestart;
 		pra_ = prb_ = 0xff;
+		ddra = ddrb = 0xff;
 		prev_cpu_cycles_ = 0;
 
 		// prev_cpu_cycles_ = 0;
@@ -108,15 +112,19 @@ public class CIA2 {
 	 *
 	 *        PRA bits (0..1)
 	 *
-	 *        %00, 0: Bank 3: $C000-$FFFF, 49152-65535 %01, 1: Bank 2: $8000-$BFFF,
-	 *        32768-49151 %10, 2: Bank 1: $4000-$7FFF, 16384-32767 %11, 3: Bank 0:
-	 *        $0000-$3FFF, 0-16383 (standard)
+	 *        %00, 0: Bank 3: $C000-$FFFF, 49152-65535
+	 *        %01, 1: Bank 2: $8000-$BFFF, 32768-49151
+	 *        %10, 2: Bank 1: $4000-$7FFF, 16384-32767
+	 *        %11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 	 */
 	public int vic_base_address() {
 		return ((~pra_ & 0x3) << 14);
 	}
 
 	public void write_register(int r, int v) {
+
+		r = r & 0xf; // The CIA 2 register are mirrored each 16 Bytes
+
 		switch (r) {
 		/* data port a (PRA) */
 		case 0x0:
@@ -128,9 +136,11 @@ public class CIA2 {
 			break;
 		/* data direction port a (DDRA) */
 		case 0x2:
+			ddra = v;
 			break;
 		/* data direction port b (DDRB) */
 		case 0x3:
+			ddrb = v;
 			break;
 		/* timer a low byte */
 		case 0x4:
@@ -181,6 +191,7 @@ public class CIA2 {
 			break;
 		/* control timer a */
 		case 0xe:
+			timerAControl=v;
 			timer_a_enabled_ = ((v & (1 << 0)) != 0);
 			timer_a_input_mode_ = (v & (1 << 5)) >> 5;
 			/* load latch requested */
@@ -189,6 +200,7 @@ public class CIA2 {
 			break;
 		/* control timer b */
 		case 0xf:
+			timerBControl=v;
 			timer_b_enabled_ = ((v & 0x1) != 0);
 			timer_b_input_mode_ = (v & (1 << 5)) | (v & (1 << 6)) >> 5;
 			/* load latch requested */
@@ -201,20 +213,24 @@ public class CIA2 {
 	public int read_register(int r) {
 		int retval = 0;
 
+		r = r & 0xf; // The CIA 1 register are mirrored each 16 Bytes
+
 		switch (r) {
 		/* data port a (PRA) */
 		case 0x0:
-			retval = pra_;
+			retval = pra_;// | (~ddra);
 			break;
 		/* data port b (PRB) */
 		case 0x1:
-			retval = prb_;
+			retval = prb_;// | (~ddrb);
 			break;
 		/* data direction port a (DDRA) */
 		case 0x2:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* data direction port b (DDRB) */
 		case 0x3:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* timer a low byte */
 		case 0x4:
@@ -234,18 +250,23 @@ public class CIA2 {
 			break;
 		/* RTC 1/10s */
 		case 0x8:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* RTC seconds */
 		case 0x9:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* RTC minutes */
 		case 0xa:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* RTC hours */
 		case 0xb:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* shift serial */
 		case 0xc:
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* interrupt control and status */
 		case 0xd:
@@ -259,9 +280,13 @@ public class CIA2 {
 			break;
 		/* control timer a */
 		case 0xe:
+			retval=timerAControl;
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		/* control timer b */
 		case 0xf:
+			retval=timerBControl;
+			System.out.println("Attempted read of CIA2 register:"+Utils.toHex2(r));
 			break;
 		}
 		return retval;

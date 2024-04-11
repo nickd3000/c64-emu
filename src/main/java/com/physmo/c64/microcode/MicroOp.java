@@ -87,7 +87,7 @@ public enum MicroOp {
 
     /////////////////////////////////////////////////////
     // UNDOCUMENTED INSTRUCTIONS
-    SAX, ANC, ASR,
+    SAX, ANC, ASR, JAM,
 
 //    PREFIX_CB,
 //    PREFIX_ED,
