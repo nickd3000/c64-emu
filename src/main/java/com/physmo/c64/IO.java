@@ -259,16 +259,16 @@ public class IO {
 //         return "finderskeepers.t64"; // WORKING
 //         return "bcbill.t64"; // mode 3
 //         return "centiped.t64"; // Runs fine
-//         return "delta.t64"; // GFX glitches (intro working better now) good intro
+//         return "delta.t64"; // JAM GFX glitches (intro working better now) good intro
 //         return "wizball.t64"; // infinite loop BRK loop
 //         return "arcadia6.t64"; // runs with GFX glitches - mode 3
 //         return "bountybob.t64"; // gets to title screen
-//         return "greenber.t64"; // hacker loader nearly perfect -
+//         return "greenber.t64"; // hacker loader nearly perfect - cant exit intro
 //         return "headoverheels.t64"; // Doesn't finish loading
-         return "humanrace.t64"; // Loads into game graphics messed up
+//         return "humanrace.t64"; // Loads into game graphics messed up
 //         return "kane.t64"; // loads but sprites messed up - DUAL mode game screen?
 //         return "kentilla.t64"; // doesnt finish loading
-//         return "OllieAndLisa.t64"; // crashes before loader
+         return "OllieAndLisa.t64"; // crashes before loader
 //         return "Panther.t64"; // game display but cant move
 //         return "pitfall2.t64"; // bad instruction
 //         return "sanxion.t64"; // BRK

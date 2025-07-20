@@ -1,6 +1,5 @@
 package com.physmo.c64;
 
-import javax.sound.midi.Soundbank;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -10,29 +9,36 @@ public class Loader {
 
 	public static void loadAndStartData(CPU6502 cpu) {
 		//String gamePath = "resource/games/";
-		//String path = gamePath+"jetsetwi.prg";
-		//String path = gamePath+"finders.prg";
+//		String path = gamePath+"jetsetwi.prg"; // Nothing happens
+//		String path = gamePath+"finders.prg";
 		// String path = gamePath+"huntersm.prg";
-		//String path = gamePath+"bombjack.prg";
-		//String path = gamePath+"1942.prg";
-		//String path = gamePath+"wizball.prg";
-		//String path = gamePath+"finders2.prg";
+//		String path = gamePath+"bombjack.prg"; // gets to menu but fire button not recognised
+//		String path = gamePath+"1942.prg"; // Invalid instruction
+//		String path = gamePath+"wizball.prg"; // BRK Loop
+//		String path = gamePath+"finders2.prg"; // Runs well
 		// String path = gamePath+"brucelee.prg";
 		// String path = gamePath+"impossiblemission.prg";
-		//String path = gamePath+"willy.prg";
-		String path = gamePath+"rambo.prg";
+//		String path = gamePath+"willy.prg"; // failr to load
+//		String path = gamePath+"rambo.prg"; // Loads and runs game well.
 		// String path = gamePath+"actionbiker.prg";
-		//String path = gamePath+"manic.prg";
-		// String path = gamePath+"arkanoid.prg";
-		//String path = gamePath+"nemesis.prg";
+//		String path = gamePath+"manic.prg"; // Doesnt get past intro
+//		 String path = gamePath+"arkanoid.prg"; // fails after intro
+//		String path = gamePath+"nemesis.prg"; // Fails in BRK loop
 		// String path = gamePath+"christmas.prg";
 		//String path = gamePath+"humanrace.prg";
 		//String path = gamePath+"sherwood.prg";
-		//String path = gamePath+"bmxsim.prg";
+//		String path = gamePath+"bmxsim.prg"; // PERFECT
+//		String path = gamePath+"zzzz.prg"; // Fails in same way as TAPE file
+//		String path = gamePath+"pitfall 2.prg"; // PERFECT
+//		String path = gamePath+"sanxion.prg"; // Bad instruction
+//		String path = gamePath+"ollilissa.prg"; // PERFECT
 		//String path = gamePath+"droid.prg";
-		//String path = gamePath+"outrun.prg";
-		//String path = gamePath+"paradroid.prg";
+//		String path = gamePath+"outrun.prg"; // Crashes after loading menu
+//		String path = gamePath+"paradroid.prg"; // Infinite loop when loading
 
+//		String path = gamePath+"dandy.prg";
+//		String path = gamePath+"entombed.prg";
+		String path = gamePath+"monty mole.prg"; // Loads to game
 		
 		int loc = 0;
 		try {
@@ -96,9 +102,9 @@ public class Loader {
 		int fileOffset = (data[offset+0x0B]<<24)|(data[offset+0x0A]<<16)|(data[offset+0x09]<<8)|(data[offset+0x08]);
 		StringBuilder directoryEntryName = new StringBuilder();
 		for (int i=0x10;i<0x1f;i++) {
-			directoryEntryName.append((char) data[i]);
+			directoryEntryName.append((char) data[offset+i]);
 		}
-		int length = endAddress-startAddress;
+		int dataLength = endAddress-startAddress;
 
 		if (c64SfileType==0) {
 			//System.out.println("c64SfileType is 0, skipping");
@@ -112,19 +118,21 @@ public class Loader {
 		System.out.println("fileOffset:"+Utils.toHex4(fileOffset));
 		System.out.println("directoryEntryName:"+directoryEntryName);
 
-		if (length+fileOffset>data.length) {
+		if (dataLength+fileOffset>data.length) {
 			System.out.println("Warning: length is bigger than data");
-			length = data.length - fileOffset;
+			dataLength = data.length - fileOffset;
 		}
 		if (endAddress==0xC3C6) {
 			System.out.println("Warning: End address is C3C6 - probably faulty CONV64 based file.");
-			length = data.length - fileOffset;
+			dataLength = data.length - fileOffset;
 		}
 
-		for (int i=0;i<length;i++) {
+		for (int i=0;i<dataLength;i++) {
 			//if (fileOffset+i<data.length) { // why should we have to check this?
 				cpu.mem.RAM[startAddress + i] = data[fileOffset + i];
+			System.out.println("data: "+Utils.toHex2(data[fileOffset + i]));
 			//}
 		}
+		System.out.println("Loaded data from "+Utils.toHex4(startAddress) +" to "+Utils.toHex4(startAddress+dataLength) );
 	}
 }
